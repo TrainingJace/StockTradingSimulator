@@ -2,89 +2,89 @@
 chcp 65001 >nul
 setlocal enabledelayedexpansion
 
-echo 🚀 开始安装股票交易模拟器...
+echo 🚀 Starting Stock Trading Simulator installation...
 echo ================================
 
-:: 检查Node.js
-echo 📋 检查系统要求...
+:: Check Node.js
+echo 📋 Checking system requirements...
 node --version >nul 2>&1
 if errorlevel 1 (
-    echo ❌ 未找到 Node.js，请先安装 Node.js ^(https://nodejs.org/^)
+    echo ❌ Node.js not found. Please install Node.js (https://nodejs.org/)
     pause
     exit /b 1
 ) else (
-    echo ✅ Node.js 已安装
+    echo ✅ Node.js is installed
 )
 
-:: 检查npm
+:: Check npm
 npm --version >nul 2>&1
 if errorlevel 1 (
-    echo ❌ 未找到 npm
+    echo ❌ npm not found
     pause
     exit /b 1
 ) else (
-    echo ✅ npm 已安装
+    echo ✅ npm is installed
 )
 
-:: 检查MySQL
+:: Check MySQL
 mysql --version >nul 2>&1
 if errorlevel 1 (
-    echo ⚠️ 未找到 MySQL，将跳过数据库创建步骤
-    echo    请手动安装 MySQL 并运行 database_setup.sql
+    echo ⚠️ MySQL not found. Skipping database creation step.
+    echo    Please install MySQL manually and run database_setup.sql
     set MYSQL_AVAILABLE=false
 ) else (
-    echo ✅ MySQL 已安装
+    echo ✅ MySQL is installed
     set MYSQL_AVAILABLE=true
 )
 
 echo.
 
-:: 安装后端依赖
-echo 📦 安装后端依赖...
+:: Install backend dependencies
+echo 📦 Installing backend dependencies...
 cd server
 if not exist "package.json" (
-    echo ❌ 未找到 server/package.json
+    echo ❌ server/package.json not found
     pause
     exit /b 1
 )
 
 call npm install
 if errorlevel 1 (
-    echo ❌ 后端依赖安装失败
+    echo ❌ Backend dependency installation failed
     pause
     exit /b 1
 )
-echo ✅ 后端依赖安装完成
+echo ✅ Backend dependencies installed
 cd ..
 
 echo.
 
-:: 安装前端依赖
-echo 📦 安装前端依赖...
+:: Install frontend dependencies
+echo 📦 Installing frontend dependencies...
 cd client
 if not exist "package.json" (
-    echo ❌ 未找到 client/package.json
+    echo ❌ client/package.json not found
     pause
     exit /b 1
 )
 
 call npm install
 if errorlevel 1 (
-    echo ❌ 前端依赖安装失败
+    echo ❌ Frontend dependency installation failed
     pause
     exit /b 1
 )
-echo ✅ 前端依赖安装完成
+echo ✅ Frontend dependencies installed
 cd ..
 
 echo.
 
-:: 配置环境文件
-echo ⚙️ 配置环境文件...
+:: Configure environment file
+echo ⚙️ Configuring environment file...
 if not exist "server\.env" (
     if exist "server\.env.example" (
         copy "server\.env.example" "server\.env" >nul
-        echo ✅ 已创建 server\.env 文件
+        echo ✅ server\.env file created
     ) else (
         (
             echo # Environment Configuration
@@ -105,29 +105,29 @@ if not exist "server\.env" (
             echo STOCK_API_KEY=your_api_key_here
             echo NEWS_API_KEY=your_news_api_key_here
         ) > server\.env
-        echo ✅ 已创建基本的 server\.env 文件
+        echo ✅ Basic server\.env file created
     )
     
-    echo ⚠️ 请编辑 server\.env 文件并设置您的数据库密码
-    
-    set /p db_password="请输入您的 MySQL root 密码 (留空表示无密码): "
-    
-    :: 使用 PowerShell 更新 .env 文件
+    echo ⚠️ Please edit the server\.env file and set your database password
+
+    set /p db_password="Enter your MySQL root password (leave blank for no password): "
+
+    :: Use PowerShell to update .env file
     powershell -Command "(Get-Content server\.env) -replace 'DB_PASS=.*', 'DB_PASS=!db_password!' | Set-Content server\.env"
-    
-    echo ✅ 数据库密码已设置
+
+    echo ✅ Database password set
 ) else (
-    echo ✅ .env 文件已存在
+    echo ✅ .env file already exists
 )
 
 echo.
 
-:: 创建数据库
+:: Create database
 if "!MYSQL_AVAILABLE!"=="true" (
-    echo 🗄️ 设置数据库...
-    echo 正在创建数据库和表...
+    echo 🗄️ Setting up database...
+    echo Creating database and tables...
     
-    :: 读取 .env 文件中的数据库配置
+    :: Read database config from .env file
     for /f "tokens=1,2 delims==" %%a in ('type server\.env ^| findstr "DB_"') do (
         if "%%a"=="DB_HOST" set DB_HOST=%%b
         if "%%a"=="DB_PORT" set DB_PORT=%%b
@@ -137,62 +137,62 @@ if "!MYSQL_AVAILABLE!"=="true" (
     
     mysql -h!DB_HOST! -P!DB_PORT! -u!DB_USER! -p!DB_PASS! < database_setup.sql
     if errorlevel 1 (
-        echo ❌ 数据库创建失败，请检查您的数据库配置
-        echo    您可以手动运行: mysql -u root -p < database_setup.sql
+        echo ❌ Database creation failed. Please check your database configuration.
+        echo    You can run manually: mysql -u root -p < database_setup.sql
     ) else (
-        echo ✅ 数据库创建成功
+        echo ✅ Database created successfully
     )
 ) else (
-    echo ⚠️ 跳过数据库设置 ^(MySQL 未安装^)
-    echo    请安装 MySQL 后手动运行: mysql -u root -p < database_setup.sql
+    echo ⚠️ Skipping database setup (MySQL not installed)
+    echo    Please install MySQL and run manually: mysql -u root -p < database_setup.sql
 )
 
 echo.
 
-:: 创建启动脚本
-echo 📝 创建启动脚本...
+:: Create startup scripts
+echo 📝 Creating startup scripts...
 
-:: 创建开发环境启动脚本
+:: Create development startup script
 (
     echo @echo off
     echo chcp 65001 ^>nul
-    echo echo 🚀 启动股票交易模拟器 ^(开发模式^)
+    echo echo 🚀 Starting Stock Trading Simulator (Development Mode)
     echo echo ================================
     echo.
-    echo echo 📡 启动后端服务器...
+    echo echo 📡 Starting backend server...
     echo cd server
     echo start "Backend Server" cmd /k "set MODE=real && node app.js"
     echo cd ..
     echo.
     echo timeout /t 3 /nobreak ^>nul
     echo.
-    echo echo 🌐 启动前端开发服务器...
+    echo echo 🌐 Starting frontend dev server...
     echo cd client
     echo start "Frontend Server" cmd /k "npm run dev"
     echo cd ..
     echo.
     echo echo.
-    echo echo ✅ 服务启动完成！
-    echo echo 🌐 前端地址: http://localhost:5174
-    echo echo 📡 后端地址: http://localhost:3001
+    echo echo ✅ Services started!
+    echo echo 🌐 Frontend: http://localhost:5174
+    echo echo 📡 Backend:  http://localhost:3001
     echo echo.
-    echo echo 按任意键退出...
+    echo echo Press any key to exit...
     echo pause ^>nul
 ) > start-dev.bat
 
-:: 创建生产环境启动脚本
+:: Create production startup script
 (
     echo @echo off
     echo chcp 65001 ^>nul
-    echo echo 🚀 启动股票交易模拟器 ^(生产模式^)
+    echo echo 🚀 Starting Stock Trading Simulator (Production Mode)
     echo echo ================================
     echo.
-    echo echo 🔨 构建前端应用...
+    echo echo 🔨 Building frontend app...
     echo cd client
     echo call npm run build
     echo cd ..
     echo.
-    echo echo 📡 启动后端服务器...
+    echo echo 📡 Starting backend server...
     echo cd server
     echo set MODE=real
     echo set NODE_ENV=production
@@ -202,35 +202,35 @@ echo 📝 创建启动脚本...
     echo pause
 ) > start-prod.bat
 
-echo ✅ 启动脚本创建完成
-echo    - start-dev.bat  ^(开发模式^)
-echo    - start-prod.bat ^(生产模式^)
-
-echo.
-
-:: 显示完成信息
-echo 🎉 安装完成！
-echo ================================
-echo.
-echo 📋 下一步操作:
-echo 1. 如果需要，请编辑 server\.env 文件配置数据库连接
-echo 2. 运行 start-dev.bat 启动开发环境
-echo 3. 访问 http://localhost:5174 查看应用
-echo.
-echo 🔗 重要链接:
-echo • 前端开发服务器: http://localhost:5174
-echo • 后端API服务器:  http://localhost:3001
-echo • API文档:        http://localhost:3001/api
-echo.
-echo 📁 项目结构:
-echo • client\     - 前端 React 应用
-echo • server\     - 后端 Node.js API
-echo • database_setup.sql - 数据库初始化脚本
-echo.
-echo 💡 提示:
-echo • 使用 start-dev.bat 启动开发环境
-echo • 使用 start-prod.bat 启动生产环境
-echo • 查看 README.md 了解更多信息
-echo.
+echo ✅ Startup scripts created
+echo    - start-dev.bat  (Development Mode)
+echo    - start-prod.bat (Production Mode)
 
 pause
+echo.
+
+:: Show completion info
+echo 🎉 Installation complete!
+echo ================================
+echo.
+echo 📋 Next steps:
+echo 1. If needed, edit server\.env to configure database connection
+echo 2. Run start-dev.bat to start development environment
+echo 3. Visit http://localhost:5174 to view the app
+echo.
+echo 🔗 Important links:
+echo • Frontend dev server: http://localhost:5174
+echo • Backend API server:  http://localhost:3001
+echo • API docs:           http://localhost:3001/api
+echo.
+echo 📁 Project structure:
+echo • client\     - Frontend React app
+echo • server\     - Backend Node.js API
+echo • database_setup.sql - Database initialization script
+echo.
+echo 💡 Tips:
+echo • Use start-dev.bat to start development environment
+echo • Use start-prod.bat to start production environment
+echo • See README.md for more info
+echo.
+
