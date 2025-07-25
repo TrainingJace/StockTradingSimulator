@@ -1,0 +1,31 @@
+{
+  "name": "stocktradingsimulator",
+  "version": "1.0.0",
+  "description": "A web-based stock trading simulator designed for educational and onboarding purposes. Users start from a selected historical date, analyze real historical market data and news, make trading decisions, and track their virtual portfolio over time.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+    "start": "concurrently \"npm run server:start\" \"npm run client:preview\"",
+    "server:dev": "cd server && npm run dev",
+    "server:start": "cd server && npm start",
+    "client:dev": "cd client && npm run dev",
+    "client:build": "cd client && npm run build",
+    "client:preview": "cd client && npm run preview",
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TrainingJace/StockTradingSimulator.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/TrainingJace/StockTradingSimulator/issues"
+  },
+  "homepage": "https://github.com/TrainingJace/StockTradingSimulator#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.0"
+  }
+}
