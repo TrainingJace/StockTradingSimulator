@@ -28,52 +28,22 @@ install.bat
 
 ### 方法二：手动安装
 
-#### 1. 安装依赖
-```bash
-# 安装后端依赖
-cd server
-npm install
+#### 0. 安装软件
+安装nodejs
+安装mysql server
 
-# 安装前端依赖
-cd ../client
-npm install
-cd ..
-```
+#### 1. 安装依赖
+npm run install:all
 
 #### 2. 环境配置
-```bash
-# 复制配置文件
-cp server/.env.example server/.env
+将server/.env.example 复制一份为 server/.env
+并将server/.env 中的 "DB_PASS="  修改为自己的mysql root用户密码， 比如 "DB_PASS=123456"
 
-# 编辑配置文件，设置数据库连接信息
-nano server/.env
-```
 
-**注意：** 数据库和表结构会在应用首次启动时自动创建，无需手动执行SQL脚本。
 
 #### 3. 启动应用
 
-**开发模式:**
-```bash
-# 启动后端 (在一个终端中)
-cd server
-MODE=real node app.js
-
-# 启动前端 (在另一个终端中)
-cd client
-npm run dev
-```
-
-**生产模式:**
-```bash
-# 构建前端
-cd client
-npm run build
-
-# 启动后端
-cd ../server
-MODE=real NODE_ENV=production node app.js
-```
+在根目录下用命令行执行 npm run dev， 如无报错， 可在浏览器使用 http://localhost:5173/ 访问页面
 
 ## 🔧 配置说明
 
