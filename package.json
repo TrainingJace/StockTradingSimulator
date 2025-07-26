@@ -4,14 +4,15 @@
   "description": "A web-based stock trading simulator designed for educational and onboarding purposes. Users start from a selected historical date, analyze real historical market data and news, make trading decisions, and track their virtual portfolio over time.",
   "main": "index.js",
   "scripts": {
-    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
-    "start": "concurrently \"npm run server:start\" \"npm run client:preview\"",
-    "server:dev": "cd server && npm run dev",
-    "server:start": "cd server && npm start",
-    "client:dev": "cd client && npm run dev",
-    "client:build": "cd client && npm run build",
-    "client:preview": "cd client && npm run preview",
-    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
+    "dev": "concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
+    "start": "concurrently \"npm run backend:start\" \"npm run frontend:preview\"",
+    "install:all": "npm install && cd src/backend && npm install && cd ../frontend && npm install && cd ../..",
+    "backend:dev": "cd src/backend && npm run dev",
+    "backend:start": "cd src/backend && npm start",
+    "frontend:dev": "cd src/frontend && npm run dev",
+    "frontend:build": "cd src/frontend && npm run build",
+    "frontend:preview": "cd src/frontend && npm run preview",
+    "postinstall": "cd src/backend && npm install && cd ../frontend && npm install",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
