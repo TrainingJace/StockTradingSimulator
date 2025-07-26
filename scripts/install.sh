@@ -180,7 +180,6 @@ main() {
     install_dependencies
     setup_environment
     setup_database
-    create_start_scripts
     show_completion_info
 }
 
