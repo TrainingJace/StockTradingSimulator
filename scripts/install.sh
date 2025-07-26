@@ -143,75 +143,6 @@ setup_database() {
     echo ""
 }
 
-# 创建启动脚本
-create_start_scripts() {
-    echo -e "${BLUE}📝 创建启动脚本...${NC}"
-    
-    # 创建开发环境启动脚本
-    cat > start-dev.sh << 'EOF'
-#!/bin/bash
-
-echo "🚀 启动股票交易模拟器 (开发模式)"
-echo "================================"
-
-# 启动后端服务器
-echo "📡 启动后端服务器..."
-cd src/backend
-MODE=real node app.js &
-BACKEND_PID=$!
-cd ../..
-
-# 等待后端启动
-sleep 3
-
-# 启动前端开发服务器
-echo "🌐 启动前端开发服务器..."
-cd src/frontend
-npm run dev &
-FRONTEND_PID=$!
-cd ../..
-
-echo ""
-echo "✅ 服务启动完成！"
-echo "🌐 前端地址: http://localhost:5174"
-echo "📡 后端地址: http://localhost:3001"
-echo ""
-echo "按 Ctrl+C 停止所有服务"
-
-# 等待用户中断
-trap 'kill $BACKEND_PID $FRONTEND_PID; exit' INT
-wait
-EOF
-
-    # 创建生产环境启动脚本
-    cat > start-prod.sh << 'EOF'
-#!/bin/bash
-
-echo "🚀 启动股票交易模拟器 (生产模式)"
-echo "================================"
-
-# 构建前端
-echo "🔨 构建前端应用..."
-cd src/frontend
-npm run build
-cd ../..
-
-# 启动后端服务器
-echo "📡 启动后端服务器..."
-cd src/backend
-MODE=real NODE_ENV=production node app.js
-EOF
-
-    # 设置执行权限
-    chmod +x start-dev.sh
-    chmod +x start-prod.sh
-    
-    echo -e "${GREEN}✅ 启动脚本创建完成${NC}"
-    echo "   - start-dev.sh  (开发模式)"
-    echo "   - start-prod.sh (生产模式)"
-    echo ""
-}
-
 # 显示完成信息
 show_completion_info() {
     echo -e "${GREEN}🎉 安装完成！${NC}"
@@ -233,8 +164,7 @@ show_completion_info() {
     echo "• docs/          - 项目文档"
     echo ""
     echo -e "${YELLOW}💡 提示:${NC}"
-    echo "• 使用 ./start-dev.sh 启动开发环境"
-    echo "• 使用 ./start-prod.sh 启动生产环境"
+    echo "• 使用 npm run dev 启动开发环境"
     echo "• 数据库表会自动创建，无需手动运行 SQL 脚本"
     echo "• 查看 README.md 了解更多信息"
     echo ""
