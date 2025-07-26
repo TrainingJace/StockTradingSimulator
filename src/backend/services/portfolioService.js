@@ -39,18 +39,27 @@ class PortfolioService {
 
   async createPortfolio(userId, initialBalance = 10000) {
     console.log(`Creating portfolio for user ${userId} with balance ${initialBalance}`);
-    // TODO: 实现投资组合创建功能
-    // 暂时返回基本投资组合结构而不是抛出错误
-    return {
-      id: Date.now(), // 临时ID
-      user_id: userId,
-      total_value: initialBalance,
-      total_cost: 0,
-      total_return: 0,
-      total_return_percent: 0,
-      positions: [],
-      transactions: []
-    };
+    try {
+      const insertQuery = `
+        INSERT INTO portfolios (user_id, cash_balance, total_value, created_at, updated_at) 
+        VALUES (?, ?, ?, NOW(), NOW())
+      `;
+      
+      const result = await this.db.execute(insertQuery, [userId, initialBalance, initialBalance]);
+      
+      // 返回创建的投资组合
+      const portfolioQuery = 'SELECT * FROM portfolios WHERE id = ?';
+      const portfolio = await this.db.execute(portfolioQuery, [result.insertId]);
+      
+      return {
+        ...portfolio[0],
+        positions: [],
+        transactions: []
+      };
+    } catch (error) {
+      console.error('Error creating portfolio:', error);
+      throw error;
+    }
   }
 
   async executeTrade(userId, tradeData) {
@@ -81,7 +90,5 @@ class PortfolioService {
     return { success: true, message: '投资组合计算功能暂未实现' };
   }
 }
-
-module.exports = new PortfolioService();
 
 module.exports = new PortfolioService();

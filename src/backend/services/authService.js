@@ -2,9 +2,6 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const config = require('../config');
 
-/**
- * 认证和用户服务
- */
 class AuthService {
   constructor() {
     this.db = require('../database/database');
@@ -38,9 +35,9 @@ class AuthService {
   }
 
   async getAllUsers() {
-    console.log(`Getting all users`);
+    console.log('Getting all users');
     try {
-      const query = 'SELECT * FROM users';
+      const query = 'SELECT id, username, email, signup_date, simulation_date FROM users';
       const result = await this.db.execute(query);
       return result;
     } catch (error) {
@@ -49,12 +46,12 @@ class AuthService {
     }
   }
 
-  // ========== 用户创建和更新功能 ==========
+  // ========== 用户创建功能 ==========
 
   async createUser(userData) {
     const { username, password, email } = userData;
-    console.log(`Creating user:`, { username, email });
-    
+    console.log('Creating user:', { username, email });
+
     try {
       // 检查用户名是否已存在
       const existingUser = await this.getUserByUsername(username);
@@ -64,9 +61,8 @@ class AuthService {
 
       // 检查邮箱是否已存在
       if (email) {
-        const emailQuery = 'SELECT id FROM users WHERE email = ?';
-        const emailResult = await this.db.execute(emailQuery, [email]);
-        if (emailResult.length > 0) {
+        const existingEmail = await this.db.execute('SELECT * FROM users WHERE email = ?', [email]);
+        if (existingEmail && existingEmail.length > 0) {
           throw new Error('Email already exists');
         }
       }
@@ -76,22 +72,26 @@ class AuthService {
 
       // 插入新用户
       const insertQuery = `
-        INSERT INTO users (username, password, email, balance, current_date, created_at, updated_at) 
-        VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+        INSERT INTO users (username, password, email, simulation_date, created_at, updated_at) 
+        VALUES (?, ?, ?, ?, NOW(), NOW())
       `;
       const currentDate = new Date().toISOString().slice(0, 10);
-      const initialBalance = 10000; // 默认余额
 
       const result = await this.db.execute(insertQuery, [
         username, 
         hashedPassword, 
         email, 
-        initialBalance, 
         currentDate
       ]);
 
+      const userId = result.insertId;
+
+      // 创建用户的初始投资组合
+      const portfolioService = require('./portfolioService');
+      await portfolioService.createPortfolio(userId, 10000);
+
       // 返回创建的用户（不包含密码）
-      const newUser = await this.getUserById(result.insertId);
+      const newUser = await this.getUserById(userId);
       const { password: _, ...userWithoutPassword } = newUser;
       return userWithoutPassword;
     } catch (error) {
@@ -100,10 +100,14 @@ class AuthService {
     }
   }
 
+  // ========== 用户更新功能 ==========
+
   async updateUserBalance(userId, newBalance) {
     console.log(`Updating balance for user ${userId}: ${newBalance}`);
     try {
-      const query = 'UPDATE users SET balance = ?, updated_at = NOW() WHERE id = ?';
+      // Note: Balance is now stored in portfolios table, not users table
+      // This method should be moved to portfolioService or updated to work with portfolios
+      const query = 'UPDATE portfolios SET cash_balance = ?, updated_at = NOW() WHERE user_id = ?';
       await this.db.execute(query, [newBalance, userId]);
       
       // 返回更新后的用户
@@ -115,18 +119,20 @@ class AuthService {
   }
 
   async updateCurrentDate(userId, newDate) {
-    console.log(`Updating current date for user ${userId}: ${newDate}`);
+    console.log(`Updating simulation date for user ${userId}: ${newDate}`);
     try {
-      const query = 'UPDATE users SET current_date = ?, updated_at = NOW() WHERE id = ?';
+      const query = 'UPDATE users SET simulation_date = ?, updated_at = NOW() WHERE id = ?';
       await this.db.execute(query, [newDate, userId]);
       
       // 返回更新后的用户
       return await this.getUserById(userId);
     } catch (error) {
-      console.error('Error updating current date:', error);
+      console.error('Error updating user simulation date:', error);
       throw error;
     }
   }
+
+  // ========== 用户删除功能 ==========
 
   async deleteUser(userId) {
     console.log(`Deleting user: ${userId}`);
@@ -148,19 +154,21 @@ class AuthService {
   // ========== 认证功能 ==========
 
   async validateCredentials(username, password) {
-    console.log(`Validating credentials for: ${username}`);
+    console.log(`Validating credentials for user: ${username}`);
     try {
       const user = await this.getUserByUsername(username);
       if (!user) {
+        console.log('User not found');
         return null;
       }
 
-      const isValidPassword = await bcrypt.compare(password, user.password);
-      if (!isValidPassword) {
+      const isValid = await bcrypt.compare(password, user.password);
+      if (!isValid) {
+        console.log('Invalid password');
         return null;
       }
 
-      // 返回用户信息（不包含密码）
+      console.log('Credentials validated successfully');
       const { password: _, ...userWithoutPassword } = user;
       return userWithoutPassword;
     } catch (error) {
@@ -171,11 +179,14 @@ class AuthService {
 
   generateToken(user) {
     console.log(`Generating token for user: ${user.username}`);
-    
     return jwt.sign(
-      { userId: user.id, username: user.username },
+      { 
+        id: user.id, 
+        username: user.username,
+        email: user.email
+      },
       config.auth.jwtSecret,
-      { expiresIn: '24h' }
+      { expiresIn: config.auth.tokenExpiry }
     );
   }
 
