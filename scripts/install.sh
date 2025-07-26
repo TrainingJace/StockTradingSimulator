@@ -68,7 +68,7 @@ install_dependencies() {
         exit 1
     fi
     
-    npm run install:all
+    npm install
     echo -e "${GREEN}✅ 所有依赖安装完成${NC}"
     echo ""
 }
