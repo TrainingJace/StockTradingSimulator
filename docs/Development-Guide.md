@@ -30,6 +30,10 @@ StockTradingSimulator/
 scripts/install.bat     # Windows
 ```
 
+<!-- 手动安装 -->
+1. npm install
+2. copy .env.example to .env, set DB_PASS
+
 ### 2. 启动开发服务器
 ```bash
 npm run dev
