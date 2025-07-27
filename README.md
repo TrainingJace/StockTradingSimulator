@@ -17,8 +17,8 @@
 
 #### macOS/Linux:
 ```bash
-chmod +x install.sh
-./install.sh
+chmod +x ./scripts/install.sh
+./scripts/install.sh
 ```
 
 #### Windows:
