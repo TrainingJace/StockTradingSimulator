@@ -128,12 +128,22 @@ function StockDashboard() {
         </div>
       )}
 
-      {/* 股票详情模态框 */}
-      <StockDetailModal 
-        stock={selectedStock}
-        isOpen={showDetailModal}
-        onClose={handleCloseModal}
-      />
+      {selectedStock && (
+        <div className="stock-detail-panel">
+          <div className="panel-header">
+            <h3>{selectedStock.symbol} - {selectedStock.name}</h3>
+            <button onClick={() => setSelectedStock(null)} className="close-panel">
+              ✕
+            </button>
+          </div>
+          <div className="panel-content">
+            <p>当前价格: ${formatPrice(selectedStock.price)}</p>
+            <p>涨跌幅: {formatPercentage(selectedStock.changePercent)}</p>
+            <p>成交量: {formatNumber(selectedStock.volume || 0)}</p>
+            <p>市值: ${formatNumber(selectedStock.marketCap / 1000000000, 1)}B</p>
+          </div>
+        </div>
+      )}
 
       <footer className="dashboard-footer">
         <p>数据更新时间: {new Date().toLocaleString()}</p>

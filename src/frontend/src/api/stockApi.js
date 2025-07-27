@@ -3,11 +3,18 @@
 import apiClient from './client.js';
 
 export const stockApi = {
-  // 获取多个股票信息（默认获取一些热门股票）
-  async getStocks(symbols = ['AAPL', 'GOOGL', 'MSFT', 'TSLA', 'AMZN']) {
-    const symbolsString = symbols.join(',');
-    const response = await apiClient.get('/stocks', { symbols: symbolsString });
-    return response; // 返回完整响应，包含 success 和 data 字段
+  // 获取多个股票信息（默认获取所有股票）
+  async getStocks(symbols = []) {
+    if (symbols.length === 0) {
+      // 如果没有指定股票，获取所有股票
+      const response = await apiClient.get('/stocks');
+      return response; // 返回完整响应，包含 success 和 data 字段
+    } else {
+      // 如果指定了股票，获取指定的股票
+      const symbolsString = symbols.join(',');
+      const response = await apiClient.get('/stocks', { symbols: symbolsString });
+      return response; // 返回完整响应，包含 success 和 data 字段
+    }
   },
 
   // 获取单个股票信息
