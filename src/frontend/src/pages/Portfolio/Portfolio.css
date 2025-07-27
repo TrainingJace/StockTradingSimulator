@@ -1,10 +1,12 @@
 /* 投资组合页面样式 */
 .portfolio {
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
   padding: 20px;
   min-height: 100vh;
   background-color: #f5f5f5;
+  box-sizing: border-box;
 }
 
 .portfolio-header {
@@ -49,14 +51,14 @@
   background: white;
   padding: 25px;
   border-radius: 15px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   text-align: center;
   transition: all 0.3s ease;
 }
 
 .summary-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
 }
 
 .summary-card h3 {
@@ -85,7 +87,7 @@
   background: white;
   border-radius: 15px;
   padding: 30px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
 .holdings-section h2 {
@@ -145,7 +147,7 @@
   border-radius: 15px;
   padding: 60px;
   text-align: center;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
 .empty-portfolio h2 {
@@ -194,8 +196,13 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .error-message {
@@ -213,36 +220,36 @@
   .portfolio {
     padding: 15px;
   }
-  
+
   .portfolio-header {
     flex-direction: column;
     gap: 15px;
     text-align: center;
   }
-  
+
   .portfolio-header h1 {
     font-size: 2rem;
   }
-  
+
   .portfolio-summary {
     grid-template-columns: 1fr;
   }
-  
+
   .holdings-table {
     grid-template-columns: 1fr;
     gap: 0;
   }
-  
+
   .table-header span,
   .table-row span {
     padding: 10px;
     display: block;
   }
-  
+
   .table-header {
     display: none;
   }
-  
+
   .table-row {
     display: block;
     background: #f8f9ff;
@@ -250,7 +257,7 @@
     border-radius: 10px;
     padding: 15px;
   }
-  
+
   .table-row span:before {
     content: attr(data-label) ': ';
     font-weight: 600;

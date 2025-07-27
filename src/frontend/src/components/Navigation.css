@@ -10,8 +10,9 @@
 }
 
 .nav-container {
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
   padding: 0 20px;
   display: flex;
   justify-content: space-between;
@@ -127,11 +128,11 @@
     flex-wrap: wrap;
     gap: 10px;
   }
-  
+
   .nav-logo {
     font-size: 1.3rem;
   }
-  
+
   .nav-menu {
     gap: 15px;
     order: 3;
@@ -139,20 +140,20 @@
     justify-content: center;
     padding-top: 10px;
   }
-  
+
   .nav-link {
     font-size: 0.9rem;
     padding: 8px 12px;
   }
-  
+
   .nav-auth {
     gap: 10px;
   }
-  
+
   .user-greeting {
     font-size: 0.8rem;
   }
-  
+
   .logout-btn {
     padding: 6px 12px;
     font-size: 0.8rem;
@@ -163,12 +164,12 @@
   .nav-menu {
     gap: 10px;
   }
-  
+
   .nav-link {
     font-size: 0.8rem;
     padding: 6px 10px;
   }
-  
+
   .auth-links {
     gap: 10px;
   }

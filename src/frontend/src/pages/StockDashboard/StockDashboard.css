@@ -1,10 +1,12 @@
 /* 股票仪表板样式 */
 .stock-dashboard {
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
   padding: 20px;
   background-color: #f5f5f5;
   min-height: 100vh;
+  box-sizing: border-box;
 }
 
 .dashboard-header {
@@ -16,7 +18,7 @@
   padding: 20px 30px;
   border-radius: 15px;
   margin-bottom: 30px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
 }
 
 .dashboard-header h1 {
@@ -73,9 +75,11 @@
   0% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }
+
   100% {
     opacity: 1;
   }
@@ -179,8 +183,13 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .stocks-grid {
@@ -194,7 +203,7 @@
   background: white;
   border-radius: 15px;
   padding: 25px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
   border-left: 4px solid #667eea;
   cursor: pointer;
@@ -202,7 +211,7 @@
 
 .stock-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
 }
 
 .stock-card.selected {
@@ -298,32 +307,32 @@
   .stock-dashboard {
     padding: 15px;
   }
-  
+
   .dashboard-header {
     flex-direction: column;
     gap: 15px;
     text-align: center;
     padding: 20px;
   }
-  
+
   .dashboard-header h1 {
     font-size: 2rem;
   }
-  
+
   .dashboard-controls {
     flex-direction: column;
     gap: 15px;
   }
-  
+
   .search-container {
     max-width: none;
   }
-  
+
   .stocks-grid {
     grid-template-columns: 1fr;
     gap: 15px;
   }
-  
+
   .stock-card {
     padding: 20px;
   }
@@ -337,7 +346,7 @@
   background: white;
   border-radius: 15px;
   padding: 20px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
   min-width: 300px;
   max-width: 400px;
   z-index: 1000;
@@ -349,6 +358,7 @@
     transform: translateY(100%);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
