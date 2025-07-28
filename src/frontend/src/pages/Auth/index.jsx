@@ -17,7 +17,7 @@ function Auth() {
       if (result.success) {
         navigate('/stocks');
       } else {
-        throw new Error(result.error || '登录失败');
+        throw new Error(result.error || 'Login failed');
       }
     } catch (err) {
       setLoginFormErrors({ submit: getErrorMessage(err) });
@@ -33,10 +33,10 @@ function Auth() {
         password: formData.password
       });
       if (response.success) {
-        setIsLogin(true); // 注册成功后切换到登录
-        alert('注册成功，请登录');
+        setIsLogin(true); // Switch to login after successful registration
+        alert('Registration successful, please login');
       } else {
-        throw new Error(response.error || '注册失败');
+        throw new Error(response.error || 'Registration failed');
       }
     } catch (err) {
       setRegisterFormErrors({ submit: getErrorMessage(err) });
@@ -68,28 +68,28 @@ function Auth() {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        {/* 切换标签 */}
+        {/* Switch Tabs */}
         <div className="auth-tabs">
           <button 
             className={`tab ${isLogin ? 'active' : ''}`}
             onClick={() => setIsLogin(true)}
           >
-            登录
+            Login
           </button>
           <button 
             className={`tab ${!isLogin ? 'active' : ''}`}
             onClick={() => setIsLogin(false)}
           >
-            注册
+            Register
           </button>
         </div>
 
         {isLogin ? (
-          // 登录表单
+          // Login Form
           <>
             <div className="auth-header">
-              <h2>📈 登录</h2>
-              <p>欢迎回到股票交易模拟器</p>
+              <h2>📈 Login</h2>
+              <p>Welcome back to Stock Trading Simulator</p>
             </div>
 
             {loginErrors.submit && (
@@ -98,7 +98,7 @@ function Auth() {
 
             <form onSubmit={handleLoginSubmit} className="auth-form">
               <div className="form-group">
-                <label htmlFor="username">用户名</label>
+                <label htmlFor="username">Username</label>
                 <input
                   type="text"
                   id="username"
@@ -115,7 +115,7 @@ function Auth() {
               </div>
 
               <div className="form-group">
-                <label htmlFor="password">密码</label>
+                <label htmlFor="password">Password</label>
                 <input
                   type="password"
                   id="password"
@@ -132,7 +132,7 @@ function Auth() {
               </div>
 
               <button type="submit" className="auth-button" disabled={loginSubmitting}>
-                {loginSubmitting ? '登录中...' : '登录'}
+                {loginSubmitting ? 'Logging in...' : 'Login'}
               </button>
             </form>
           </>
@@ -140,8 +140,8 @@ function Auth() {
           // 注册表单
           <>
             <div className="auth-header">
-              <h2>📊 注册</h2>
-              <p>创建您的股票交易模拟账户</p>
+              <h2>📊 Register</h2>
+              <p>Create your stock trading simulation account</p>
             </div>
 
             {registerErrors.submit && (
@@ -150,7 +150,7 @@ function Auth() {
 
             <form onSubmit={handleRegisterSubmit} className="auth-form">
               <div className="form-group">
-                <label htmlFor="username">用户名 *</label>
+                <label htmlFor="username">Username *</label>
                 <input
                   type="text"
                   id="username"
@@ -168,7 +168,7 @@ function Auth() {
               </div>
 
               <div className="form-group">
-                <label htmlFor="reg-email">邮箱 *</label>
+                <label htmlFor="reg-email">Email *</label>
                 <input
                   type="email"
                   id="reg-email"
@@ -185,7 +185,7 @@ function Auth() {
               </div>
 
               <div className="form-group">
-                <label htmlFor="reg-password">密码 *</label>
+                <label htmlFor="reg-password">Password *</label>
                 <input
                   type="password"
                   id="reg-password"
@@ -203,7 +203,7 @@ function Auth() {
               </div>
 
               <div className="form-group">
-                <label htmlFor="confirmPassword">确认密码 *</label>
+                <label htmlFor="confirmPassword">Confirm Password *</label>
                 <input
                   type="password"
                   id="confirmPassword"
@@ -220,14 +220,14 @@ function Auth() {
               </div>
 
               <button type="submit" className="auth-button" disabled={registerSubmitting}>
-                {registerSubmitting ? '注册中...' : '创建账户'}
+                {registerSubmitting ? 'Registering...' : 'Create Account'}
               </button>
             </form>
           </>
         )}
 
         <div className="auth-footer">
-          <Link to="/" className="auth-link">返回首页</Link>
+          <Link to="/" className="auth-link">Back to Home</Link>
         </div>
       </div>
     </div>

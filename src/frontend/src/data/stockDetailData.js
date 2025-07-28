@@ -2,7 +2,7 @@
 export const stockDetailData = {
   'AAPL': {
     logo: 'https://logo.clearbit.com/apple.com',
-    description: 'Apple Inc.是一家美国跨国科技公司，专门设计、开发和销售消费电子、计算机软件和在线服务。苹果是世界上最大的科技公司之一，以其创新的产品和生态系统而闻名。',
+    description: 'Apple Inc. is an American multinational technology company that specializes in consumer electronics, computer software, and online services. Apple is one of the world\'s largest technology companies, known for its innovative products and ecosystem.',
     news: [
       {
         id: 1,
