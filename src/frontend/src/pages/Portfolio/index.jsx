@@ -29,7 +29,7 @@ function Portfolio() {
         return getErrorMessage(err);
       }
     }
-  );
+  )
 
   // 获取交易历史数据
   const {
@@ -94,6 +94,18 @@ function Portfolio() {
     }
   };
 
+  // 计算股票总价值
+  const calculateStocksValue = () => {
+    if (!portfolio?.positions || portfolio.positions.length === 0) {
+      return 0;
+    }
+    return portfolio.positions.reduce((total, position) => {
+      return total + (parseFloat(position.current_value) || 0);
+    }, 0);
+  };
+
+  const stocksValue = calculateStocksValue();
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'holdings':
@@ -137,7 +149,7 @@ function Portfolio() {
         </div>
         <div className="summary-card">
           <h3>Stock Value</h3>
-          <p className="summary-value">${portfolio?.stocksValue?.toFixed(2) || '0.00'}</p>
+          <p className="summary-value">${stocksValue.toFixed(2)}</p>
         </div>
         <div className="summary-card">
           <h3>Total Gain</h3>
@@ -153,7 +165,7 @@ function Portfolio() {
             className={`tab-btn ${activeTab === 'holdings' ? 'active' : ''}`}
             onClick={() => handleTabChange('holdings')}
           >
-            Holdings
+            Positions
           </button>
           <button 
             className={`tab-btn ${activeTab === 'watchlist' ? 'active' : ''}`}

@@ -23,6 +23,40 @@ class PortfolioService {
       const positionsQuery = 'SELECT * FROM positions WHERE portfolio_id = ?';
       const positions = await this.db.execute(positionsQuery, [portfolioData.id]);
 
+      console.log(`Found ${positions.length} positions for portfolio ${portfolioData.id}`);
+      if (positions.length > 0) {
+        console.log('Positions:', positions.map(p => `${p.symbol}: ${p.shares} shares`));
+      }
+
+      // 如果有持仓，更新当前价格和价值
+      if (positions && positions.length > 0) {
+        const stockService = require('./stockService');
+        
+        // 获取所有持仓股票的符号
+        const symbols = positions.map(pos => pos.symbol);
+        
+        // 获取当前股票价格
+        const stockPrices = {};
+        for (const symbol of symbols) {
+          const stockData = await stockService.getStockPrice(symbol);
+          if (stockData) {
+            stockPrices[symbol] = stockData.price;
+          }
+        }
+        
+        // 更新持仓价格和价值
+        if (Object.keys(stockPrices).length > 0) {
+          await this.updatePositionPrices(userId, stockPrices);
+          
+          // 重新获取更新后的持仓信息
+          const updatedPositions = await this.db.execute(positionsQuery, [portfolioData.id]);
+          return {
+            ...portfolioData,
+            positions: updatedPositions || []
+          };
+        }
+      }
+
       return {
         ...portfolioData,
         positions: positions || []

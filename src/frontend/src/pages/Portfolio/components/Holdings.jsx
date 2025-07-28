@@ -9,18 +9,21 @@ function Holdings({ portfolio, onTransactionSuccess }) {
   const [selectedSymbol, setSelectedSymbol] = useState(null)
   const [selectedStock, setSelectedStock] = useState(null)
 
-  const handleBuyClick = (holding) => {
-    setSelectedSymbol(holding.symbol)
+  // 调试：打印Holdings接收到的portfolio数据
+  console.log('Holdings - positions:', portfolio);
+
+  const handleBuyClick = (position) => {
+    setSelectedSymbol(position.symbol)
     setBuyModalOpen(true)
   }
 
-  const handleSellClick = (holding) => {
+  const handleSellClick = (position) => {
     // 卖出仍需要持仓信息，所以保留原有逻辑
     setSelectedStock({
-      symbol: holding.symbol,
-      name: holding.name || holding.symbol,
-      price: holding.current_price || 0,
-      current_price: holding.current_price || 0,
+      symbol: position.symbol,
+      name: position.name || position.symbol,
+      price: parseFloat(position.current_price) || 0,
+      current_price: parseFloat(position.current_price) || 0,
       change: 0,
       changePercent: 0
     })
@@ -47,27 +50,27 @@ function Holdings({ portfolio, onTransactionSuccess }) {
               <span>Gain/Loss</span>
               <span>Actions</span>
             </div>
-            {portfolio.positions.map((holding) => (
-              <div key={holding.symbol} className="table-row">
-                <span className="stock-symbol">{holding.symbol}</span>
-                <span>{holding.shares}</span>
-                <span>${formatPrice(holding.avg_cost || 0)}</span>
-                <span>${formatPrice(holding.current_price || 0)}</span>
-                <span>${formatPrice(holding.current_value || 0)}</span>
-                <span className={`gain-loss ${(holding.unrealized_gain || 0) >= 0 ? 'positive' : 'negative'}`}>
-                  ${formatPrice(holding.unrealized_gain || 0)}
-                  ({formatPercentage(holding.unrealized_gain_percent || 0)}%)
+            {portfolio.positions.map((position) => (
+              <div key={position.symbol} className="table-row">
+                <span className="stock-symbol">{position.symbol}</span>
+                <span>{position.shares}</span>
+                <span>${formatPrice(parseFloat(position.avg_cost) || 0)}</span>
+                <span>${formatPrice(parseFloat(position.current_price) || 0)}</span>
+                <span>${formatPrice(parseFloat(position.current_value) || 0)}</span>
+                <span className={`gain-loss ${(parseFloat(position.unrealized_gain) || 0) >= 0 ? 'positive' : 'negative'}`}>
+                  ${formatPrice(parseFloat(position.unrealized_gain) || 0)}
+                  ({formatPercentage(parseFloat(position.unrealized_gain_percent) || 0)}%)
                 </span>
                 <span className="action-buttons">
                   <button 
                     className="action-btn buy-btn"
-                    onClick={() => handleBuyClick(holding)}
+                    onClick={() => handleBuyClick(position)}
                   >
                     Buy
                   </button>
                   <button 
                     className="action-btn sell-btn"
-                    onClick={() => handleSellClick(holding)}
+                    onClick={() => handleSellClick(position)}
                   >
                     Sell
                   </button>
