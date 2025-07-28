@@ -13,27 +13,27 @@ class StockService {
       const query = 'SELECT * FROM stocks WHERE symbol = ?';
       const result = await this.db.execute(query, [symbol]);
       const basicStock = result[0];
-      
+
       if (!basicStock) {
         return null;
       }
 
       if (simulationDate) {
-        
+
         // 先尝试精确匹配日期字符串
         const historyQuery = `
           SELECT close_price, volume, date
           FROM stock_history 
           WHERE symbol = ? AND date = ?
         `;
-        
+
         const dateOnly = simulationDate.split('T')[0]; // 提取 YYYY-MM-DD
         const historyResult = await this.db.execute(historyQuery, [symbol, dateOnly]);
-     
-        
+
+
         if (historyResult.length > 0) {
           const historyData = historyResult[0];
-          
+
           // 查找前一个交易日的价格来计算变化
           const previousDayQuery = `
             SELECT close_price, date
@@ -42,23 +42,23 @@ class StockService {
             ORDER BY date DESC 
             LIMIT 1
           `;
-          
+
           const previousDayResult = await this.db.execute(previousDayQuery, [symbol, dateOnly]);
           console.log(`Previous day data for ${symbol}:`, previousDayResult[0] ? `${previousDayResult[0].date}: $${previousDayResult[0].close_price}` : 'not found');
-          
+
           let changeAmount = 0;
           let changePercent = 0;
-          
+
           if (previousDayResult.length > 0) {
             const previousPrice = parseFloat(previousDayResult[0].close_price);
             const currentPrice = parseFloat(historyData.close_price);
-            
+
             changeAmount = currentPrice - previousPrice;
             changePercent = previousPrice > 0 ? (changeAmount / previousPrice) * 100 : 0;
-            
+
             console.log(`Price change for ${symbol}: $${changeAmount.toFixed(2)} (${changePercent.toFixed(2)}%)`);
           }
-          
+
           return {
             ...basicStock,
             price: parseFloat(historyData.close_price),
@@ -67,7 +67,7 @@ class StockService {
             last_updated: historyData.date,
             change: parseFloat(changeAmount.toFixed(2)),
             changePercent: parseFloat(changePercent.toFixed(2))
-            
+
           };
         } else {
           // 如果没有找到该日期的历史数据，先留白处理
@@ -91,7 +91,7 @@ class StockService {
         // 如果没有指定股票，返回所有股票
         const query = 'SELECT * FROM stocks ORDER BY symbol';
         const result = await this.db.execute(query);
-        
+
         if (simulationDate) {
           // 为每个股票获取历史价格
           return await Promise.all(
@@ -108,7 +108,7 @@ class StockService {
         const placeholders = symbols.map(() => '?').join(',');
         const query = `SELECT * FROM stocks WHERE symbol IN (${placeholders}) ORDER BY symbol`;
         const result = await this.db.execute(query, symbols);
-        
+
         if (simulationDate) {
           // 为每个股票获取历史价格
           return await Promise.all(
@@ -129,12 +129,12 @@ class StockService {
 
   async getHistoricalData(symbol, startDate, endDate) {
     console.log(`Getting historical data for ${symbol} from ${startDate} to ${endDate}`);
-    
+
     try {
       // 使用历史数据服务获取数据
       const stockHistoryService = require('./stockHistoryService');
       const historyData = await stockHistoryService.getHistoryData(symbol, startDate, endDate);
-      
+
       // 格式化数据，确保与前端期望的格式一致
       return historyData.map(item => ({
         date: item.date,
@@ -215,6 +215,19 @@ class StockService {
       symbol: stock.symbol,
       name: stock.name,
       sector: stock.sector,
+      industry: stock.industry,
+      description: stock.description,
+      cik: stock.cik,
+      exchange: stock.exchange,
+      currency: stock.currency,
+      country: stock.country,
+      address: stock.address,
+      officialSite: stock.officialSite,
+      marketCapitalization: stock.marketCapitalization,
+      ebitda: stock.ebitda,
+      peRatio: stock.peRatio,
+      pegRatio: stock.pegRatio,
+      bookValue: stock.bookValue,
       price: parseFloat(stock.price),
       change: parseFloat(stock.change_amount),
       changePercent: parseFloat(stock.change_percent),

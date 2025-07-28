@@ -196,12 +196,17 @@ body {
     font-size: 1.3em;
 }
 
-.sector {
+.company-details .symbol,
+.company-details .sector,
+.company-details .exchange {
+    display: block;
     color: #666;
     font-size: 0.9em;
     background: #f0f0f0;
     padding: 4px 8px;
     border-radius: 12px;
+    margin-bottom: 5px;
+    width: fit-content;
 }
 
 .company-description {
@@ -212,6 +217,66 @@ body {
     color: #555;
     line-height: 1.6;
     margin: 0;
+}
+
+/* 基本信息区域 */
+.basic-info {
+    margin-bottom: 20px;
+}
+
+.basic-info h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 1.1em;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 5px;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.info-label {
+    color: #666;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+.info-value {
+    color: #333;
+    font-weight: bold;
+}
+
+.info-value a {
+    color: #667eea;
+    text-decoration: none;
+}
+
+.info-value a:hover {
+    text-decoration: underline;
+}
+
+/* 财务指标区域 */
+.financial-metrics h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 1.1em;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 5px;
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
 }
 
 .key-metrics {
