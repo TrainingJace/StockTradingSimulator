@@ -58,8 +58,10 @@ class AuthService {
         throw new Error('User not found');
       }
       
-      // 如果没有设置模拟日期，返回当前日期
-      return user.simulation_date || new Date().toISOString().split('T')[0];
+      // MySQL会返回统一格式的日期，不需要额外处理
+      const simulationDate = user.simulation_date || new Date().toISOString().split('T')[0];
+      console.log('Retrieved simulation_date:', simulationDate);
+      return simulationDate;
     } catch (error) {
       console.error('Error getting simulation date:', error);
       throw error;
@@ -89,19 +91,23 @@ class AuthService {
 
       // 加密密码
       const hashedPassword = await bcrypt.hash(password, 10);
-
-      // 插入新用户
+      
+      // 使用配置的simulation_date，MySQL会统一处理时区
+      const simulation_date = config.auth.simulation_date || new Date().toISOString().split('T')[0];
+      console.log('Creating user with simulation_date:', simulation_date);
+    
+     
       const insertQuery = `
         INSERT INTO users (username, password, email, simulation_date, created_at, updated_at) 
         VALUES (?, ?, ?, ?, NOW(), NOW())
       `;
-      const currentDate = new Date().toISOString().slice(0, 10);
+
 
       const result = await this.db.execute(insertQuery, [
         username, 
         hashedPassword, 
         email, 
-        currentDate
+        simulation_date
       ]);
 
       const userId = result.insertId;
@@ -156,9 +162,52 @@ class AuthService {
   async advanceSimulationDate(userId) {
     console.log(`Advancing simulation date for user ${userId}`);
     try {
-      // 使用 DATE_ADD 函数直接在数据库中将日期推进一天
-      const query = 'UPDATE users SET simulation_date = DATE_ADD(simulation_date, INTERVAL 1 DAY), updated_at = NOW() WHERE id = ?';
-      await this.db.execute(query, [userId]);
+      // 获取当前用户的simulation_date
+      const currentUser = await this.getUserById(userId);
+      if (!currentUser) {
+        throw new Error('User not found');
+      }
+
+      let currentDate = new Date(currentUser.simulation_date);
+      let nextDate;
+      let attempts = 0;
+      const maxAttempts = 10; // 最多尝试10天，避免无限循环
+
+      do {
+        // 将日期推进一天
+        currentDate.setDate(currentDate.getDate() + 1);
+        nextDate = currentDate.toISOString().split('T')[0]; // 格式化为 YYYY-MM-DD
+        attempts++;
+
+        // 检查这个日期是否在stock_history中存在
+        const checkQuery = `
+          SELECT COUNT(*) as count 
+          FROM stock_history 
+          WHERE date = ? 
+          LIMIT 1
+        `;
+        const result = await this.db.execute(checkQuery, [nextDate]);
+        const hasData = result[0].count > 0;
+
+        console.log(`Checking date ${nextDate}: ${hasData ? 'has data' : 'no data'} (attempt ${attempts})`);
+
+        if (hasData) {
+          // 找到有数据的日期，更新用户的simulation_date
+          const updateQuery = 'UPDATE users SET simulation_date = ?, updated_at = NOW() WHERE id = ?';
+          await this.db.execute(updateQuery, [nextDate, userId]);
+          
+          console.log(`✅ Advanced simulation date to ${nextDate} for user ${userId}`);
+          break;
+        }
+
+        if (attempts >= maxAttempts) {
+          console.warn(`⚠️ Reached max attempts (${maxAttempts}) when advancing date for user ${userId}`);
+          // 即使没有数据也更新到最后尝试的日期
+          const updateQuery = 'UPDATE users SET simulation_date = ?, updated_at = NOW() WHERE id = ?';
+          await this.db.execute(updateQuery, [nextDate, userId]);
+          break;
+        }
+      } while (attempts < maxAttempts);
       
       // 返回更新后的用户
       return await this.getUserById(userId);

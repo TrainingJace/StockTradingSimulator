@@ -39,7 +39,7 @@ const SellStockModal = ({ isOpen, onClose, stock, holdings, onSellSuccess }) => 
         userId,
         symbol: stock.symbol,
         shares: parseInt(shares),
-        price: parseFloat(stock.current_price) || parseFloat(stock.price) || 0
+        price: parseFloat(stock.price) || 0
       };
 
       // 验证订单数据
@@ -77,7 +77,7 @@ const SellStockModal = ({ isOpen, onClose, stock, holdings, onSellSuccess }) => 
     }
   };
 
-  const estimatedTotal = shares ? (parseInt(shares) * (parseFloat(stock?.current_price) || parseFloat(stock?.price) || 0)).toFixed(2) : '0.00';
+  const estimatedTotal = shares ? (parseInt(shares) * parseFloat(stock?.price || 0)).toFixed(2) : '0.00';
 
   if (!isOpen) return null;
 
@@ -93,7 +93,7 @@ const SellStockModal = ({ isOpen, onClose, stock, holdings, onSellSuccess }) => 
           <div className="stock-info">
             <div className="stock-name">{stock?.name || stock?.symbol}</div>
             <div className="stock-price">
-              Current Price: ${formatPrice(stock?.current_price || stock?.price)}
+              Current Price: ${formatPrice(stock?.price)}
             </div>
             <div className="current-holding">
               Current Holdings: {maxShares} shares
@@ -126,7 +126,7 @@ const SellStockModal = ({ isOpen, onClose, stock, holdings, onSellSuccess }) => 
               </div>
               <div className="summary-row">
                 <span>Price per Share:</span>
-                <span>${formatPrice(stock?.current_price || stock?.price)}</span>
+                <span>${formatPrice(stock?.price)}</span>
               </div>
               <div className="summary-row total">
                 <span>Estimated Total:</span>

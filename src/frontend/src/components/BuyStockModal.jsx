@@ -28,6 +28,7 @@ const BuyStockModal = ({ isOpen, onClose, symbol, onBuySuccess }) => {
     setFetchingStock(true);
     setError('');
     try {
+      // stockApi会自动从localStorage获取用户的simulation_date
       const response = await stockApi.getStock(symbol);
       if (response.success && response.data) {
         setStock(response.data);
@@ -69,7 +70,7 @@ const BuyStockModal = ({ isOpen, onClose, symbol, onBuySuccess }) => {
       const orderData = {
         symbol: stock.symbol,
         shares: shares,
-        price: parseFloat(stock.price) || parseFloat(stock.current_price) || 0
+        price: parseFloat(stock.price) || 0
       };
 
       // 验证订单数据
@@ -84,7 +85,7 @@ const BuyStockModal = ({ isOpen, onClose, symbol, onBuySuccess }) => {
 
       if (response.success) {
         // 购买成功
-        alert(`成功购买 ${shares} 股 ${stock.symbol}！\n总价：$${(shares * (parseFloat(stock.price) || parseFloat(stock.current_price) || 0)).toFixed(2)}`);
+        alert(`成功购买 ${shares} 股 ${stock.symbol}！\n总价：$${(shares * parseFloat(stock.price)).toFixed(2)}`);
         
         // 调用成功回调
         if (onBuySuccess) {
@@ -108,7 +109,7 @@ const BuyStockModal = ({ isOpen, onClose, symbol, onBuySuccess }) => {
     }
   };
 
-  const totalCost = shares * (parseFloat(stock?.price) || parseFloat(stock?.current_price) || 0);
+  const totalCost = shares * parseFloat(stock?.price || 0);
 
   if (!isOpen) return null;
 
@@ -141,7 +142,7 @@ const BuyStockModal = ({ isOpen, onClose, symbol, onBuySuccess }) => {
                   <span className="name">{stock.name}</span>
                 </div>
                 <div className="stock-price">
-                  <span className="price">${formatPrice(stock.price || stock.current_price)}</span>
+                  <span className="price">${formatPrice(stock.price)}</span>
                   {(stock.change !== undefined || stock.changePercent !== undefined) && (
                     <span 
                       className={`change ${(parseFloat(stock.change) || 0) >= 0 ? 'positive' : 'negative'}`}
@@ -170,7 +171,7 @@ const BuyStockModal = ({ isOpen, onClose, symbol, onBuySuccess }) => {
                 <div className="order-summary">
                   <div className="summary-row">
                     <span>单价：</span>
-                    <span>${formatPrice(stock.price || stock.current_price)}</span>
+                    <span>${formatPrice(stock.price)}</span>
                   </div>
                   <div className="summary-row">
                     <span>数量：</span>

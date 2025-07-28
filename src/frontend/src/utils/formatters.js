@@ -70,13 +70,26 @@ export const getPriceChangeColor = (change) => {
 /**
  * 格式化日期时间
  * @param {string|Date} date - 日期
- * @param {string} format - 格式类型 'date'|'time'|'datetime'
- * @returns {string} 格式化后的日期字符串
+ * @param {string} format - 格式类型：'date', 'time', 'datetime'
+ * @returns {string} 格式化后的日期时间字符串
  */
 export const formatDateTime = (date, format = 'datetime') => {
   if (!date) return '';
   
-  const d = new Date(date);
+  let d;
+  if (typeof date === 'string') {
+    // 如果是字符串，检查是否包含时间信息
+    if (format === 'date' && date.includes('T')) {
+      // 对于日期格式，只提取日期部分避免时区转换
+      const dateOnly = date.split('T')[0];
+      d = new Date(dateOnly + 'T12:00:00'); // 添加中午时间避免时区边界问题
+    } else {
+      d = new Date(date);
+    }
+  } else {
+    d = new Date(date);
+  }
+  
   if (isNaN(d.getTime())) return '';
   
   const options = {

@@ -1,32 +1,63 @@
 // 股票相关 API
 
 import apiClient from './client.js';
+// 导入获取认证状态的函数
+const getAuthState = () => {
+  const storedUser = localStorage.getItem('user');
+  try {
+    return storedUser ? JSON.parse(storedUser) : null;
+  } catch (error) {
+    console.error('Error parsing stored user data:', error);
+    return null;
+  }
+};
 
 export const stockApi = {
   // 获取多个股票信息（默认获取所有股票）
   async getStocks(symbols = []) {
-    if (symbols.length === 0) {
-      // 如果没有指定股票，获取所有股票
-      const response = await apiClient.get('/stocks');
-      return response; // 返回完整响应，包含 success 和 data 字段
-    } else {
-      // 如果指定了股票，获取指定的股票
-      const symbolsString = symbols.join(',');
-      const response = await apiClient.get('/stocks', { symbols: symbolsString });
-      return response; // 返回完整响应，包含 success 和 data 字段
+    const params = {};
+    const user = getAuthState();
+    
+    if (symbols.length > 0) {
+      params.symbols = symbols.join(',');
     }
+    
+    // 自动添加simulation_date参数
+    if (user?.simulation_date) {
+      params.simulation_date = user.simulation_date;
+    }
+    
+    const response = await apiClient.get('/stocks', params);
+    return response; // 返回完整响应，包含 success 和 data 字段
   },
 
   // 获取单个股票信息
   async getStock(symbol) {
-    const response = await apiClient.get(`/stocks/${symbol}`);
+    const params = {};
+    const user = getAuthState();
+    
+    // 自动添加simulation_date参数
+    if (user?.simulation_date) {
+      params.simulation_date = user.simulation_date;
+    }
+    
+    const response = await apiClient.get(`/stocks/${symbol}`, params);
     return response; // 返回完整响应
   },
 
   // 获取多个股票信息
   async getMultipleStocks(symbols) {
-    const symbolsString = symbols.join(',');
-    const response = await apiClient.get('/stocks', { symbols: symbolsString });
+    const params = {
+      symbols: symbols.join(',')
+    };
+    const user = getAuthState();
+    
+    // 自动添加simulation_date参数
+    if (user?.simulation_date) {
+      params.simulation_date = user.simulation_date;
+    }
+    
+    const response = await apiClient.get('/stocks', params);
     return response; // 返回完整响应
   },
 

@@ -35,12 +35,14 @@ class PortfolioService {
         // 获取所有持仓股票的符号
         const symbols = positions.map(pos => pos.symbol);
         
+        const simulationDate = await this.authService.getSimulationDate(userId);
         // 获取当前股票价格
         const stockPrices = {};
         for (const symbol of symbols) {
-          const stockData = await stockService.getStockPrice(symbol);
+          const stockData = await stockService.getStockPrice(symbol, simulationDate);
           if (stockData) {
             stockPrices[symbol] = stockData.price;
+            console.log(`price for ${symbol} on ${simulationDate}: ${stockData.price}`);
           }
         }
         
