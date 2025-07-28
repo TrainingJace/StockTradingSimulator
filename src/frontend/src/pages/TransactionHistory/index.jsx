@@ -15,28 +15,28 @@ function TransactionHistory() {
   return (
     <div className="transaction-history-page">
       <div className="page-header">
-        <h1>交易历史</h1>
-        <p>查看您的所有买卖记录</p>
+        <h1>Transaction History</h1>
+        <p>View all your buy and sell records</p>
       </div>
       
       <div className="transaction-content">
         {loading ? (
           <div className="loading-state">
-            <p>加载中...</p>
+            <p>Loading...</p>
           </div>
         ) : error ? (
           <div className="error-state">
-            <p>错误: {error}</p>
+            <p>Error: {error}</p>
           </div>
         ) : transactions.length === 0 ? (
           <div className="empty-state">
-            <h3>暂无交易记录</h3>
-            <p>开始交易后，您的交易记录将显示在这里</p>
+            <h3>No Transaction Records</h3>
+            <p>Your transaction records will appear here after you start trading</p>
           </div>
         ) : (
           <div className="transaction-table">
             {/* TODO: 实现交易历史表格组件 */}
-            <p>交易历史表格将在这里显示</p>
+            <p>Transaction history table will be displayed here</p>
           </div>
         )}
       </div>

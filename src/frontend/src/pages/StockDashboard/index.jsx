@@ -45,14 +45,14 @@ function StockDashboard() {
   return (
     <div className="stock-dashboard">
       <header className="dashboard-header">
-        <h1>📈 股票交易模拟器</h1>
+        <h1>📈 Stock Trading Simulator</h1>
       </header>
 
       <div className="dashboard-controls">
         <div className="search-container">
           <input
             type="text"
-            placeholder="搜索股票代码或名称..."
+            placeholder="Search stock code or name..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
@@ -64,7 +64,7 @@ function StockDashboard() {
           )}
         </div>
         <button onClick={handleRefresh} className="refresh-btn" disabled={loading}>
-          {loading ? '刷新中...' : '🔄 刷新数据'}
+          {loading ? 'Refreshing...' : '🔄 Refresh Data'}
         </button>
       </div>
 
@@ -77,13 +77,13 @@ function StockDashboard() {
       {loading && !error ? (
         <div className="loading">
           <div className="loading-spinner"></div>
-          <p>加载股票数据中...</p>
+          <p>Loading stock data...</p>
         </div>
       ) : (
         <div className="stocks-grid">
           {stocks && stocks.length === 0 ? (
             <div className="no-data">
-              {searchTerm ? '未找到匹配的股票' : '暂无股票数据'}
+              {searchTerm ? 'No matching stocks found' : 'No stock data available'}
             </div>
           ) : (
             stocks && stocks.map((stock) => (
@@ -115,11 +115,11 @@ function StockDashboard() {
                 </div>
                 <div className="stock-details">
                   <div className="detail-item">
-                    <span className="label">成交量:</span>
+                    <span className="label">Volume:</span>
                     <span className="value">{formatNumber(stock.volume || 0)}</span>
                   </div>
                   <div className="detail-item">
-                    <span className="label">市值:</span>
+                    <span className="label">Market Cap:</span>
                     <span className="value">${formatNumber(stock.marketCap / 1000000000, 1)}B</span>
                   </div>
                 </div>
@@ -137,9 +137,9 @@ function StockDashboard() {
       />
 
       <footer className="dashboard-footer">
-        <p>数据更新时间: {new Date().toLocaleString()}</p>
-        <p>* 本系统仅供教学演示使用，数据为模拟数据</p>
-        <p>显示 {stocks ? stocks.length : 0} 只股票 {searchTerm && `(搜索: "${searchTerm}")`}</p>
+        <p>Data updated: {new Date().toLocaleString()}</p>
+        <p>* This system is for educational demonstration only, data is simulated</p>
+        <p>Showing {stocks ? stocks.length : 0} stocks {searchTerm && `(Search: "${searchTerm}")`}</p>
       </footer>
     </div>
   )

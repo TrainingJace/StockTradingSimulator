@@ -15,7 +15,7 @@ const StockDetailModal = ({ stock, isOpen, onClose }) => {
       setStockDetail(detail);
       setCurrentNewsIndex(0);
       
-      // 从API获取真实新闻数据
+      // Get real news data from API
       fetchStockNews(stock.symbol);
     }
   }, [stock, isOpen]);
@@ -26,20 +26,20 @@ const StockDetailModal = ({ stock, isOpen, onClose }) => {
       const response = await newsApi.getStockNews(symbol, { limit: 5 });
       
       if (response.success && response.data?.length > 0) {
-        // 更新stockDetail中的新闻数据
+        // Update news data in stockDetail
         setStockDetail(prev => ({
           ...prev,
           news: response.data.map(newsItem => ({
             title: newsItem.title,
             summary: newsItem.summary || newsItem.content?.substring(0, 200) + '...',
-            date: new Date(newsItem.publishedAt || newsItem.date).toLocaleDateString('zh-CN'),
-            source: newsItem.source || '财经新闻'
+            date: new Date(newsItem.publishedAt || newsItem.date).toLocaleDateString('en-US'),
+            source: newsItem.source || 'Financial News'
           }))
         }));
       }
     } catch (error) {
       console.error('Failed to fetch news:', error);
-      // 如果API失败，保持使用默认新闻数据
+      // If API fails, keep using default news data
     } finally {
       setLoadingNews(false);
     }
@@ -52,19 +52,19 @@ const StockDetailModal = ({ stock, isOpen, onClose }) => {
       setCurrentNewsIndex((prevIndex) => 
         (prevIndex + 1) % stockDetail.news.length
       );
-    }, 4000); // 4秒切换一次新闻
+    }, 4000); // Switch news every 4 seconds
 
     return () => clearInterval(interval);
   }, [isOpen, stockDetail?.news?.length]);
 
   const handleAddToWatchlist = () => {
     console.log(`Adding ${stock.symbol} to watchlist`);
-    // TODO: 实现添加到观察列表的逻辑
+    // TODO: Implement add to watchlist logic
   };
 
   const handleBuyStock = () => {
     console.log(`Buying ${stock.symbol}`);
-    // TODO: 实现购买股票的逻辑
+    // TODO: Implement buy stock logic
   };
 
   const formatPrice = (price) => {
@@ -80,9 +80,9 @@ const StockDetailModal = ({ stock, isOpen, onClose }) => {
   }
 
   const timeframes = [
-    { key: 'daily', label: '日' },
-    { key: 'weekly', label: '周' },
-    { key: 'monthly', label: '月' }
+    { key: 'daily', label: 'D' },
+    { key: 'weekly', label: 'W' },
+    { key: 'monthly', label: 'M' }
   ];
 
   const currentNews = stockDetail.news[currentNewsIndex];
@@ -104,7 +104,7 @@ const StockDetailModal = ({ stock, isOpen, onClose }) => {
           {/* 左上角 - K线图 */}
           <div className="chart-section">
             <div className="chart-header">
-              <h3>价格走势</h3>
+              <h3>Price Chart</h3>
               <div className="timeframe-buttons">
                 {timeframes.map((timeframe) => (
                   <button
@@ -180,11 +180,11 @@ const StockDetailModal = ({ stock, isOpen, onClose }) => {
             </div>
             <div className="key-metrics">
               <div className="metric">
-                <span className="metric-label">市值</span>
+                <span className="metric-label">Market Cap</span>
                 <span className="metric-value">${(stock.marketCap / 1000000000).toFixed(1)}B</span>
               </div>
               <div className="metric">
-                <span className="metric-label">成交量</span>
+                <span className="metric-label">Volume</span>
                 <span className="metric-value">{(stock.volume / 1000000).toFixed(1)}M</span>
               </div>
             </div>
@@ -192,11 +192,11 @@ const StockDetailModal = ({ stock, isOpen, onClose }) => {
 
           {/* 左下角 - 公司新闻轮播 */}
           <div className="news-section">
-            <h3>最新资讯</h3>
+            <h3>Latest News</h3>
             <div className="news-carousel">
               {loadingNews ? (
                 <div className="news-loading">
-                  <p>加载新闻中...</p>
+                  <p>Loading news...</p>
                 </div>
               ) : currentNews ? (
                 <div className="news-item">
@@ -205,11 +205,11 @@ const StockDetailModal = ({ stock, isOpen, onClose }) => {
                     <span className="news-date">{currentNews.date}</span>
                   </div>
                   <p className="news-summary">{currentNews.summary}</p>
-                  <span className="news-source">来源: {currentNews.source}</span>
+                                    <p>Source: {currentNews.source}</p>
                 </div>
               ) : (
                 <div className="news-empty">
-                  <p>暂无相关新闻</p>
+                  <p>No related news</p>
                 </div>
               )}
               {stockDetail?.news?.length > 0 && (

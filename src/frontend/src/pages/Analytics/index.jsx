@@ -58,29 +58,29 @@ const Analytics = () => {
 
   return (
     <div className="analytics-page">
-      <div className="page-header">
-        <h1>投资组合分析</h1>
-        <p>查看您的投资表现和分析数据</p>
+            <div className="page-header">
+        <h1>Portfolio Analytics</h1>
+        <p>View your investment performance and analysis</p>
       </div>
 
       <div className="analytics-content">
         <div className="analytics-grid">
-          <div className="analytics-card">
-            <h3>总资产价值</h3>
+                    <div className="analytics-card">
+            <h3>Total Assets</h3>
             <div className="metric-value">
               ${analyticsData?.totalValue?.toLocaleString() || '0.00'}
             </div>
           </div>
 
           <div className="analytics-card">
-            <h3>总收益</h3>
+            <h3>Total Return</h3>
             <div className="metric-value">
               ${analyticsData?.totalReturn?.toLocaleString() || '0.00'}
             </div>
           </div>
 
           <div className="analytics-card">
-            <h3>收益率</h3>
+            <h3>Return Rate</h3>
             <div className="metric-value">
               {analyticsData?.returnPercentage?.toFixed(2) || '0.00'}%
             </div>
@@ -88,17 +88,17 @@ const Analytics = () => {
         </div>
 
         <div className="charts-section">
-          <div className="chart-container">
-            <h3>收益趋势</h3>
+                    <div className="chart-container">
+            <h3>Return Trend</h3>
             <div className="chart-placeholder">
-              <p>图表将在后续开发中实现</p>
+              <p>Chart will be implemented in future development</p>
               {/* TODO: 实现收益趋势图表 */}
             </div>
           </div>
 
           <div className="performance-lists">
             <div className="performance-section">
-              <h3>表现最佳</h3>
+              <h3>Top Performers</h3>
               <div className="performance-list">
                 {analyticsData?.topPerformers?.length > 0 ? (
                   analyticsData.topPerformers.map((stock, index) => (
@@ -110,13 +110,13 @@ const Analytics = () => {
                     </div>
                   ))
                 ) : (
-                  <p className="no-data">暂无数据</p>
+                  <p className="no-data">No data available</p>
                 )}
               </div>
             </div>
 
             <div className="performance-section">
-              <h3>表现最差</h3>
+              <h3>Worst Performers</h3>
               <div className="performance-list">
                 {analyticsData?.worstPerformers?.length > 0 ? (
                   analyticsData.worstPerformers.map((stock, index) => (
@@ -128,7 +128,7 @@ const Analytics = () => {
                     </div>
                   ))
                 ) : (
-                  <p className="no-data">暂无数据</p>
+                  <p className="no-data">No data available</p>
                 )}
               </div>
             </div>
