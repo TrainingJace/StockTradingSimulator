@@ -1,19 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import { stockDetailData, getDefaultStockDetail } from '../data/stockDetailData.js';
+import { newsApi } from '../api/newsApi.js';
 import './StockDetailModal.css';
 
 const StockDetailModal = ({ stock, isOpen, onClose }) => {
   const [selectedTimeframe, setSelectedTimeframe] = useState('daily');
   const [currentNewsIndex, setCurrentNewsIndex] = useState(0);
   const [stockDetail, setStockDetail] = useState(null);
+  const [loadingNews, setLoadingNews] = useState(false);
 
   useEffect(() => {
     if (stock && isOpen) {
       const detail = stockDetailData[stock.symbol] || getDefaultStockDetail(stock.symbol, stock.name);
       setStockDetail(detail);
       setCurrentNewsIndex(0);
+      
+      // 从API获取真实新闻数据
+      fetchStockNews(stock.symbol);
     }
   }, [stock, isOpen]);
+
+  const fetchStockNews = async (symbol) => {
+    try {
+      setLoadingNews(true);
+      const response = await newsApi.getStockNews(symbol, { limit: 5 });
+      
+      if (response.success && response.data?.length > 0) {
+        // 更新stockDetail中的新闻数据
+        setStockDetail(prev => ({
+          ...prev,
+          news: response.data.map(newsItem => ({
+            title: newsItem.title,
+            summary: newsItem.summary || newsItem.content?.substring(0, 200) + '...',
+            date: new Date(newsItem.publishedAt || newsItem.date).toLocaleDateString('zh-CN'),
+            source: newsItem.source || '财经新闻'
+          }))
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to fetch news:', error);
+      // 如果API失败，保持使用默认新闻数据
+    } finally {
+      setLoadingNews(false);
+    }
+  };
 
   useEffect(() => {
     if (!isOpen || !stockDetail?.news?.length) return;
@@ -32,9 +62,9 @@ const StockDetailModal = ({ stock, isOpen, onClose }) => {
     // TODO: 实现添加到观察列表的逻辑
   };
 
-  const handleAddToFavorite = () => {
-    console.log(`Adding ${stock.symbol} to favorites`);
-    // TODO: 实现添加到收藏的逻辑
+  const handleBuyStock = () => {
+    console.log(`Buying ${stock.symbol}`);
+    // TODO: 实现购买股票的逻辑
   };
 
   const formatPrice = (price) => {
@@ -164,7 +194,11 @@ const StockDetailModal = ({ stock, isOpen, onClose }) => {
           <div className="news-section">
             <h3>最新资讯</h3>
             <div className="news-carousel">
-              {currentNews && (
+              {loadingNews ? (
+                <div className="news-loading">
+                  <p>加载新闻中...</p>
+                </div>
+              ) : currentNews ? (
                 <div className="news-item">
                   <div className="news-header">
                     <h4>{currentNews.title}</h4>
@@ -173,16 +207,22 @@ const StockDetailModal = ({ stock, isOpen, onClose }) => {
                   <p className="news-summary">{currentNews.summary}</p>
                   <span className="news-source">来源: {currentNews.source}</span>
                 </div>
+              ) : (
+                <div className="news-empty">
+                  <p>暂无相关新闻</p>
+                </div>
               )}
-              <div className="news-indicators">
-                {stockDetail.news.map((_, index) => (
-                  <span 
-                    key={index}
-                    className={`indicator ${index === currentNewsIndex ? 'active' : ''}`}
-                    onClick={() => setCurrentNewsIndex(index)}
-                  />
-                ))}
-              </div>
+              {stockDetail?.news?.length > 0 && (
+                <div className="news-indicators">
+                  {stockDetail.news.map((_, index) => (
+                    <span 
+                      key={index}
+                      className={`indicator ${index === currentNewsIndex ? 'active' : ''}`}
+                      onClick={() => setCurrentNewsIndex(index)}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -192,9 +232,9 @@ const StockDetailModal = ({ stock, isOpen, onClose }) => {
               <span className="btn-icon">👁️</span>
               Add to Watchlist
             </button>
-            <button className="action-btn favorite-btn" onClick={handleAddToFavorite}>
-              <span className="btn-icon">⭐</span>
-              Add to Favorite
+            <button className="action-btn buy-btn" onClick={handleBuyStock}>
+              <span className="btn-icon">💰</span>
+              Buy Stock
             </button>
           </div>
         </div>

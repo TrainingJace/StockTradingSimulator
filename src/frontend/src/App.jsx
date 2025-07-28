@@ -5,6 +5,7 @@ import Home from './pages/Home/index.jsx'
 import Auth from './pages/Auth/index.jsx'
 import StockDashboard from './pages/StockDashboard/index.jsx'
 import Portfolio from './pages/Portfolio/index.jsx'
+import Analytics from './pages/Analytics/index.jsx'
 import './App.css'
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
               <Route path="/auth" element={<Auth />} />
               <Route path="/stocks" element={<StockDashboard />} />
               <Route path="/portfolio" element={<Portfolio />} />
+              <Route path="/analytics" element={<Analytics />} />
               
               {/* 兼容旧路由 */}
               <Route path="/login" element={<Navigate to="/auth" replace />} />

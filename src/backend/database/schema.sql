@@ -67,6 +67,8 @@ CREATE TABLE IF NOT EXISTS stocks (
   symbol VARCHAR(10) UNIQUE NOT NULL,
   name VARCHAR(100) NOT NULL,
   sector VARCHAR(50),
+  industry VARCHAR(100),
+  description TEXT,
   price DECIMAL(10,2) NOT NULL,
   previous_price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   change_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
@@ -75,4 +77,55 @@ CREATE TABLE IF NOT EXISTS stocks (
   market_cap BIGINT DEFAULT 0,
   last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- 创建观察列表表
+CREATE TABLE IF NOT EXISTS watchlists (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT NOT NULL,
+  symbol VARCHAR(10) NOT NULL,
+  added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_user_symbol (user_id, symbol)
+) ENGINE=InnoDB;
+
+-- 创建股票历史数据表
+CREATE TABLE IF NOT EXISTS stock_history (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  symbol VARCHAR(10) NOT NULL,
+  date DATE NOT NULL,
+  open_price DECIMAL(10,2) NOT NULL,
+  high_price DECIMAL(10,2) NOT NULL,
+  low_price DECIMAL(10,2) NOT NULL,
+  close_price DECIMAL(10,2) NOT NULL,
+  volume BIGINT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY unique_symbol_date (symbol, date)
+) ENGINE=InnoDB;
+
+-- 创建新闻表
+CREATE TABLE IF NOT EXISTS news (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  symbol VARCHAR(10),
+  title VARCHAR(255) NOT NULL,
+  summary TEXT,
+  content TEXT,
+  source VARCHAR(100),
+  sentiment_score DECIMAL(3,2), -- -1.00 to 1.00
+  published_date DATE NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_symbol_date (symbol, published_date)
+) ENGINE=InnoDB;
+
+-- 创建投资组合价值历史表
+CREATE TABLE IF NOT EXISTS portfolio_history (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  portfolio_id INT NOT NULL,
+  date DATE NOT NULL,
+  total_value DECIMAL(15,2) NOT NULL,
+  cash_balance DECIMAL(15,2) NOT NULL,
+  unrealized_gain DECIMAL(15,2) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (portfolio_id) REFERENCES portfolios(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_portfolio_date (portfolio_id, date)
 ) ENGINE=InnoDB;

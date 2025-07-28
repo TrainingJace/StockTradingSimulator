@@ -336,6 +336,18 @@
   font-weight: 600;
 }
 
+.news-loading,
+.news-empty {
+  text-align: center;
+  padding: 20px;
+  color: #999;
+  font-size: 0.9rem;
+}
+
+.news-loading {
+  color: #667eea;
+}
+
 .news-indicators {
   display: flex;
   justify-content: center;
@@ -404,12 +416,12 @@
   box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
 }
 
-.favorite-btn {
+.buy-btn {
   background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
   color: white;
 }
 
-.favorite-btn:hover {
+.buy-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(255, 152, 0, 0.3);
 }

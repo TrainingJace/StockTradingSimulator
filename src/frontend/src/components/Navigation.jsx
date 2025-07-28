@@ -74,10 +74,10 @@ function Navigation() {
               </li>
               <li className="nav-item">
                 <Link 
-                  to="/transactions" 
-                  className={`nav-link ${isActive('/transactions') ? 'active' : ''}`}
+                  to="/analytics" 
+                  className={`nav-link ${isActive('/analytics') ? 'active' : ''}`}
                 >
-                  交易历史
+                  投资分析
                 </Link>
               </li>
             </>

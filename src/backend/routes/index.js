@@ -5,11 +5,19 @@ const router = express.Router();
 const stocksRouter = require('./stocks');
 const portfolioRouter = require('./portfolio');
 const authRouter = require('./auth');
+const watchlistRouter = require('./watchlist');
+const tradingRouter = require('./trading');
+const newsRouter = require('./news');
+const analyticsRouter = require('./analytics');
 
 // 注册路由
 router.use('/auth', authRouter);  // 包含用户管理功能
 router.use('/stocks', stocksRouter);
 router.use('/portfolio', portfolioRouter);
+router.use('/watchlist', watchlistRouter);
+router.use('/trading', tradingRouter);
+router.use('/news', newsRouter);
+router.use('/analytics', analyticsRouter);
 
 // 健康检查端点
 router.get('/health', (req, res) => {
