@@ -1,0 +1,106 @@
+import React, { useState } from 'react'
+import { formatPrice, formatPercentage } from '../../../utils/formatters'
+import BuyStockModal from '../../../components/BuyStockModal'
+import SellStockModal from '../../../components/SellStockModal'
+
+function Holdings({ portfolio, onTransactionSuccess }) {
+  const [buyModalOpen, setBuyModalOpen] = useState(false)
+  const [sellModalOpen, setSellModalOpen] = useState(false)
+  const [selectedSymbol, setSelectedSymbol] = useState(null)
+  const [selectedStock, setSelectedStock] = useState(null)
+
+  const handleBuyClick = (holding) => {
+    setSelectedSymbol(holding.symbol)
+    setBuyModalOpen(true)
+  }
+
+  const handleSellClick = (holding) => {
+    // 卖出仍需要持仓信息，所以保留原有逻辑
+    setSelectedStock({
+      symbol: holding.symbol,
+      name: holding.name || holding.symbol,
+      price: holding.current_price || 0,
+      current_price: holding.current_price || 0,
+      change: 0,
+      changePercent: 0
+    })
+    setSellModalOpen(true)
+  }
+
+  const handleTransactionSuccess = () => {
+    if (onTransactionSuccess) {
+      onTransactionSuccess()
+    }
+  }
+
+  return (
+    <>
+      <div className="holdings-section">
+        {portfolio?.positions && portfolio.positions.length > 0 ? (
+          <div className="holdings-table">
+            <div className="table-header">
+              <span>Stock Symbol</span>
+              <span>Quantity</span>
+              <span>Average Cost</span>
+              <span>Current Price</span>
+              <span>Total Value</span>
+              <span>Gain/Loss</span>
+              <span>Actions</span>
+            </div>
+            {portfolio.positions.map((holding) => (
+              <div key={holding.symbol} className="table-row">
+                <span className="stock-symbol">{holding.symbol}</span>
+                <span>{holding.shares}</span>
+                <span>${formatPrice(holding.avg_cost || 0)}</span>
+                <span>${formatPrice(holding.current_price || 0)}</span>
+                <span>${formatPrice(holding.current_value || 0)}</span>
+                <span className={`gain-loss ${(holding.unrealized_gain || 0) >= 0 ? 'positive' : 'negative'}`}>
+                  ${formatPrice(holding.unrealized_gain || 0)}
+                  ({formatPercentage(holding.unrealized_gain_percent || 0)}%)
+                </span>
+                <span className="action-buttons">
+                  <button 
+                    className="action-btn buy-btn"
+                    onClick={() => handleBuyClick(holding)}
+                  >
+                    Buy
+                  </button>
+                  <button 
+                    className="action-btn sell-btn"
+                    onClick={() => handleSellClick(holding)}
+                  >
+                    Sell
+                  </button>
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state">
+            <h3>No Holdings</h3>
+            <p>You haven't purchased any stocks yet</p>
+          </div>
+        )}
+      </div>
+
+      {/* Buy Stock Modal */}
+      <BuyStockModal
+        isOpen={buyModalOpen}
+        onClose={() => setBuyModalOpen(false)}
+        symbol={selectedSymbol}
+        onBuySuccess={handleTransactionSuccess}
+      />
+
+      {/* Sell Stock Modal */}
+      <SellStockModal
+        isOpen={sellModalOpen}
+        onClose={() => setSellModalOpen(false)}
+        stock={selectedStock}
+        holdings={portfolio?.positions || []}
+        onSellSuccess={handleTransactionSuccess}
+      />
+    </>
+  )
+}
+
+export default Holdings

@@ -295,7 +295,7 @@ const StockDetail = () => {
             <BuyStockModal 
                 isOpen={showBuyModal}
                 onClose={handleCloseBuyModal}
-                stock={stock}
+                symbol={stock?.symbol}
             />
         </div>
     );

@@ -19,7 +19,7 @@ class TradingApi {
   async executeSellOrder(orderData) {
     try {
       const response = await apiClient.post('/trading/sell', orderData);
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Sell order failed:', error);
       return {

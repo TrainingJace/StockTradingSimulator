@@ -315,7 +315,7 @@ class TradingService {
       const query = `SELECT t.id, t.type, t.symbol, t.shares, t.price, t.total, t.timestamp
                      FROM transactions t
                      WHERE t.user_id = ?
-                     ORDER BY t.timestamp DESC
+                     ORDER BY t.id DESC
                      LIMIT ${limitNum} OFFSET ${offsetNum}`;
       
       const rows = await this.db.execute(query, [userId]);

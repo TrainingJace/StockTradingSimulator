@@ -2,7 +2,8 @@ import React, { useState } from 'react'
 import { useAsyncData } from '../../hooks'
 import { portfolioApi, tradingApi } from '../../api'
 import { useAuth } from '../../hooks'
-import { formatPrice, formatPercentage, getPriceChangeColor, formatDate, getErrorMessage } from '../../utils/formatters'
+import { getErrorMessage } from '../../utils/formatters'
+import { Holdings, Watchlist, TransactionHistory } from './components'
 import './Portfolio.css'
 
 function Portfolio() {
@@ -85,149 +86,30 @@ function Portfolio() {
     )
   }
 
+  // 处理交易成功后的回调
+  const handleTransactionSuccess = () => {
+    refetch(); // 刷新portfolio数据
+    if (activeTab === 'transactions') {
+      refetchTransactions(); // 如果在交易历史页面，也刷新交易数据
+    }
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'holdings':
-        return (
-          <div className="holdings-section">
-            {portfolio?.positions && portfolio.positions.length > 0 ? (
-              <div className="holdings-table">
-                <div className="table-header">
-                  <span>Stock Symbol</span>
-                  <span>Quantity</span>
-                  <span>Average Cost</span>
-                  <span>Current Price</span>
-                  <span>Total Value</span>
-                  <span>Gain/Loss</span>
-                </div>
-                {portfolio.positions.map((holding) => (
-                  <div key={holding.symbol} className="table-row">
-                    <span className="stock-symbol">{holding.symbol}</span>
-                    <span>{holding.shares}</span>
-                    <span>${formatPrice(holding.avg_cost || 0)}</span>
-                    <span>${formatPrice(holding.current_price || 0)}</span>
-                    <span>${formatPrice(holding.current_value || 0)}</span>
-                    <span className={`gain-loss ${(holding.unrealized_gain || 0) >= 0 ? 'positive' : 'negative'}`}>
-                      ${formatPrice(holding.unrealized_gain || 0)}
-                      ({formatPercentage(holding.unrealized_gain_percent || 0)}%)
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-state">
-                <h3>No Holdings</h3>
-                <p>You haven't purchased any stocks yet</p>
-              </div>
-            )}
-          </div>
-        );
+        return <Holdings portfolio={portfolio} onTransactionSuccess={handleTransactionSuccess} />;
 
       case 'watchlist':
-        return (
-          <div className="watchlist-section">
-            {watchlist.length > 0 ? (
-              <div className="watchlist-table">
-                <div className="table-header">
-                  <span>Stock Symbol</span>
-                  <span>Company Name</span>
-                  <span>Current Price</span>
-                  <span>Change</span>
-                  <span>Action</span>
-                </div>
-                {watchlist.map((stock) => (
-                  <div key={stock.symbol} className="table-row">
-                    <span className="stock-symbol">{stock.symbol}</span>
-                    <span>{stock.name}</span>
-                    <span>${formatPrice(stock.price)}</span>
-                    <span className={stock.change >= 0 ? 'positive' : 'negative'}>
-                      {stock.change >= 0 ? '+' : ''}${formatPrice(Math.abs(stock.change))} 
-                      ({formatPercentage(stock.changePercent)}%)
-                    </span>
-                    <span>
-                      <button 
-                        className="remove-btn"
-                        onClick={() => setWatchlist(prev => prev.filter(s => s.symbol !== stock.symbol))}
-                      >
-                        Remove
-                      </button>
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-state">
-                <h3>Watchlist is Empty</h3>
-                <p>Add stocks to your watchlist from the stock details page</p>
-              </div>
-            )}
-          </div>
-        );
+        return <Watchlist watchlist={watchlist} setWatchlist={setWatchlist} onTransactionSuccess={handleTransactionSuccess} />;
 
       case 'transactions':
-        if (transactionsLoading) {
-          return (
-            <div className="transactions-section">
-              <div className="loading">
-                <div className="loading-spinner"></div>
-                <p>Loading transactions...</p>
-              </div>
-            </div>
-          );
-        }
-
-        if (transactionsError) {
-          return (
-            <div className="transactions-section">
-              <div className="error-message">
-                ❌ {transactionsError}
-                <button onClick={refetchTransactions} className="retry-btn">
-                  重试
-                </button>
-              </div>
-            </div>
-          );
-        }
-
-        // transactionHistory 已经是数组了，不需要再访问 .data
-        const transactions = transactionHistory || [];
-        
         return (
-          <div className="transactions-section">
-            {transactions.length > 0 ? (
-              <div className="transactions-table">
-                <div className="table-header">
-                  <span>Date</span>
-                  <span>Stock Symbol</span>
-                  <span>Stock Name</span>
-                  <span>Action</span>
-                  <span>Quantity</span>
-                  <span>Price</span>
-                  <span>Total Amount</span>
-                </div>
-                {transactions.map((transaction) => (
-                  <div key={transaction.id} className="table-row">
-                    <span>{formatDate(transaction.timestamp)}</span>
-                    <span className="stock-symbol">{transaction.symbol}</span>
-                    <span>{transaction.stockName || '-'}</span>
-                    <span className={`transaction-type ${transaction.type.toLowerCase()}`}>
-                      {transaction.type === 'BUY' ? 'Buy' : 'Sell'}
-                    </span>
-                    <span>{transaction.shares}</span>
-                    <span>${formatPrice(transaction.price)}</span>
-                    <span className={`total ${transaction.type.toLowerCase()}`}>
-                      ${formatPrice(transaction.total)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-state">
-                <h3>No Transaction History</h3>
-                <p>You haven't made any stock transactions yet</p>
-              </div>
-            )}
-          </div>
+          <TransactionHistory 
+            transactionHistory={transactionHistory}
+            transactionsLoading={transactionsLoading}
+            transactionsError={transactionsError}
+            refetchTransactions={refetchTransactions}
+          />
         );
 
       default:
