@@ -112,6 +112,32 @@ async function insertTestStocks(database) {
 
     console.log(`📈 Inserting ${testStocks.length} test stocks...`);
 
+// Example seed for portfolio table
+const seedPortfolio = async (db) => {
+  await db.query(`INSERT INTO portfolio (symbol, value, return) VALUES
+    ('AAPL', 42000, 8200),
+    ('TSLA', 30000, 6500),
+    ('NVDA', 24000, 5900),
+    ('BABA', 12000, -4100),
+    ('JD', 12000, -2900)
+  `);
+};
+
+// Example seed for portfolio_history table
+const seedPortfolioHistory = async (db) => {
+  await db.query(`INSERT INTO portfolio_history (date, value) VALUES
+    ('2025-07-21', 118000),
+    ('2025-07-22', 119000),
+    ('2025-07-23', 119500),
+    ('2025-07-24', 120000)
+  `);
+};
+
+module.exports = async function(db) {
+  // ...existing code...
+  await seedPortfolio(db);
+  await seedPortfolioHistory(db);
+};
     for (const stock of testStocks) {
       const insertQuery = `
         INSERT INTO stocks (symbol, name, sector, price, previous_price, change_amount, change_percent, volume, market_cap)

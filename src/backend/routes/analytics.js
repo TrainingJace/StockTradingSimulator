@@ -4,16 +4,19 @@ const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
-// 所有分析路由都需要认证
+// All analytics routes require authentication
 router.use(authenticateToken);
 
-// 获取投资组合表现摘要
+// Portfolio analytics (for frontend integration)
+router.get('/portfolio', analyticsController.getPortfolioAnalytics);
+
+// Performance summary
 router.get('/performance', analyticsController.getPerformanceSummary);
 
-// 获取投资组合价值历史
+// Portfolio value history
 router.get('/history', analyticsController.getPortfolioValueHistory);
 
-// 与基准指数比较
+// Benchmark comparison
 router.get('/benchmark', analyticsController.getBenchmarkComparison);
 
 module.exports = router;
