@@ -26,11 +26,12 @@ class StockController {
     try {
       const { symbols } = req.query;
       
-      if (!symbols) {
-        return res.status(400).json({ error: 'Symbols parameter is required' });
+      let symbolArray = [];
+      if (symbols) {
+        symbolArray = symbols.split(',').map(s => s.trim());
       }
+      // 如果没有指定symbols参数，symbolArray为空数组，service会返回所有股票
 
-      const symbolArray = symbols.split(',').map(s => s.trim());
       const stocks = await services.stockService.getMultipleStocks(symbolArray);
 
       res.json({ success: true, data: stocks });
