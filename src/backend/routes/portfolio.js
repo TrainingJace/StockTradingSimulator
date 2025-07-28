@@ -23,4 +23,8 @@ router.put('/user/:userId/values', portfolioController.updatePortfolioValues);
 // 使用方式: GET /api/portfolio/user/1/stats?period=1M
 router.get('/user/:userId/stats', portfolioController.getPortfolioStats);
 
+// 获取详细的投资收益统计
+// 使用方式: GET /api/portfolio/user/1/investment-stats
+router.get('/user/:userId/investment-stats', portfolioController.getInvestmentStats);
+
 module.exports = router;

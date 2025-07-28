@@ -18,8 +18,9 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS portfolios (
   id INT PRIMARY KEY AUTO_INCREMENT,
   user_id INT NOT NULL,
-  cash_balance DECIMAL(15,2) DEFAULT 10000.00,
-  total_value DECIMAL(15,2) DEFAULT 10000.00,
+  initial_balance DECIMAL(15,2) DEFAULT 500000.00, -- 初始资金50万
+  cash_balance DECIMAL(15,2) DEFAULT 500000.00,
+  total_value DECIMAL(15,2) DEFAULT 500000.00,
   total_cost DECIMAL(15,2) DEFAULT 0.00,
   total_return DECIMAL(15,2) DEFAULT 0.00,
   total_return_percent DECIMAL(5,2) DEFAULT 0.00,

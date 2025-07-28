@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { stockDetailData, getDefaultStockDetail } from '../../data/stockDetailData.js';
 import { newsApi } from '../../api/newsApi.js';
 import { stockApi } from '../../api';
+import BuyStockModal from '../../components/BuyStockModal.jsx';
 import './StockDetail.css';
 
 const StockDetail = () => {
@@ -14,6 +15,7 @@ const StockDetail = () => {
     const [stock, setStock] = useState(null);
     const [loadingNews, setLoadingNews] = useState(false);
     const [loadingStock, setLoadingStock] = useState(true);
+    const [showBuyModal, setShowBuyModal] = useState(false);
 
     useEffect(() => {
         if (symbol) {
@@ -95,9 +97,12 @@ const StockDetail = () => {
     };
 
     const handleBuyStock = () => {
-        console.log(`Buying ${stock.symbol}`);
-        // TODO: 实现购买股票的逻辑
-        alert(`购买 ${stock.symbol} 功能开发中...`);
+        console.log(`Opening buy modal for ${stock.symbol}`);
+        setShowBuyModal(true);
+    };
+
+    const handleCloseBuyModal = () => {
+        setShowBuyModal(false);
     };
 
     const formatPrice = (price) => {
@@ -285,6 +290,13 @@ const StockDetail = () => {
                     </button>
                 </div>
             </div>
+            
+            {/* 购买股票模态框 */}
+            <BuyStockModal 
+                isOpen={showBuyModal}
+                onClose={handleCloseBuyModal}
+                stock={stock}
+            />
         </div>
     );
 };

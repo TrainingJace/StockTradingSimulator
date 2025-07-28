@@ -68,7 +68,7 @@ function Portfolio() {
       case 'holdings':
         return (
           <div className="holdings-section">
-            {portfolio?.holdings && portfolio.holdings.length > 0 ? (
+            {portfolio?.positions && portfolio.positions.length > 0 ? (
               <div className="holdings-table">
                 <div className="table-header">
                   <span>Stock Symbol</span>
@@ -78,16 +78,16 @@ function Portfolio() {
                   <span>Total Value</span>
                   <span>Gain/Loss</span>
                 </div>
-                {portfolio.holdings.map((holding) => (
+                {portfolio.positions.map((holding) => (
                   <div key={holding.symbol} className="table-row">
                     <span className="stock-symbol">{holding.symbol}</span>
-                    <span>{holding.quantity}</span>
-                    <span>${formatPrice(holding.averageCost || 0)}</span>
-                    <span>${formatPrice(holding.currentPrice || 0)}</span>
-                    <span>${formatPrice((holding.quantity * holding.currentPrice) || 0)}</span>
-                    <span className={`gain-loss ${(holding.totalGain || 0) >= 0 ? 'positive' : 'negative'}`}>
-                      ${formatPrice(holding.totalGain || 0)}
-                      ({formatPercentage(holding.gainPercent || 0)}%)
+                    <span>{holding.shares}</span>
+                    <span>${formatPrice(holding.avg_cost || 0)}</span>
+                    <span>${formatPrice(holding.current_price || 0)}</span>
+                    <span>${formatPrice(holding.current_value || 0)}</span>
+                    <span className={`gain-loss ${(holding.unrealized_gain || 0) >= 0 ? 'positive' : 'negative'}`}>
+                      ${formatPrice(holding.unrealized_gain || 0)}
+                      ({formatPercentage(holding.unrealized_gain_percent || 0)}%)
                     </span>
                   </div>
                 ))}
@@ -194,11 +194,11 @@ function Portfolio() {
       <div className="portfolio-summary">
         <div className="summary-card">
           <h3>Total Assets</h3>
-          <p className="summary-value">${portfolio?.totalValue?.toFixed(2) || '0.00'}</p>
+          <p className="summary-value">${portfolio?.total_value ? parseFloat(portfolio.total_value).toFixed(2) : '0.00'}</p>
         </div>
         <div className="summary-card">
           <h3>Cash Balance</h3>
-          <p className="summary-value">${portfolio?.cashBalance?.toFixed(2) || '0.00'}</p>
+          <p className="summary-value">${portfolio?.cash_balance ? parseFloat(portfolio.cash_balance).toFixed(2) : '0.00'}</p>
         </div>
         <div className="summary-card">
           <h3>Stock Value</h3>
@@ -206,8 +206,8 @@ function Portfolio() {
         </div>
         <div className="summary-card">
           <h3>Total Gain</h3>
-          <p className={`summary-value ${(portfolio?.totalGain || 0) >= 0 ? 'positive' : 'negative'}`}>
-            ${portfolio?.totalGain?.toFixed(2) || '0.00'}
+          <p className={`summary-value ${(portfolio?.total_return || 0) >= 0 ? 'positive' : 'negative'}`}>
+            ${portfolio?.total_return ? parseFloat(portfolio.total_return).toFixed(2) : '0.00'}
           </p>
         </div>
       </div>
