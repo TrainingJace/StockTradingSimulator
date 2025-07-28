@@ -4,6 +4,7 @@ import Navigation from './components/Navigation'
 import Home from './pages/Home/index.jsx'
 import Auth from './pages/Auth/index.jsx'
 import StockDashboard from './pages/StockDashboard/index.jsx'
+import StockDetail from './pages/StockDetail/index.jsx'
 import Portfolio from './pages/Portfolio/index.jsx'
 import Analytics from './pages/Analytics/index.jsx'
 import './App.css'
@@ -19,13 +20,14 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/stocks" element={<StockDashboard />} />
+              <Route path="/stock/:symbol" element={<StockDetail />} />
               <Route path="/portfolio" element={<Portfolio />} />
               <Route path="/analytics" element={<Analytics />} />
-              
+
               {/* 兼容旧路由 */}
               <Route path="/login" element={<Navigate to="/auth" replace />} />
               <Route path="/register" element={<Navigate to="/auth" replace />} />
-              
+
               {/* 默认重定向到首页 */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

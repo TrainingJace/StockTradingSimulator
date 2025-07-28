@@ -23,13 +23,14 @@ function StockDashboard() {
     (stock, term) => {
       if (!term) return true;
       return stock.symbol.toLowerCase().includes(term.toLowerCase()) ||
-             stock.name.toLowerCase().includes(term.toLowerCase());
+        stock.name.toLowerCase().includes(term.toLowerCase());
     }
   );
 
   const handleStockSelect = (stock) => {
-    setSelectedStock(stock);
-    setShowDetailModal(true);
+    // 在新浏览器窗口中打开股票详情页面
+    const stockDetailUrl = `${window.location.origin}/stock/${stock.symbol}`;
+    window.open(stockDetailUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
   };
 
   const handleCloseModal = () => {
@@ -86,8 +87,8 @@ function StockDashboard() {
             </div>
           ) : (
             stocks && stocks.map((stock) => (
-              <div 
-                key={stock.symbol} 
+              <div
+                key={stock.symbol}
                 className={`stock-card ${selectedStock?.symbol === stock.symbol ? 'selected' : ''}`}
                 onClick={() => handleStockSelect(stock)}
               >
@@ -99,13 +100,13 @@ function StockDashboard() {
                   <span className="current-price">${formatPrice(stock.price)}</span>
                 </div>
                 <div className="stock-change">
-                  <span 
+                  <span
                     className="price-change"
                     style={{ color: getPriceChangeColor(stock.change) }}
                   >
                     {stock.change > 0 ? '+' : ''}${formatPrice(Math.abs(stock.change))}
                   </span>
-                  <span 
+                  <span
                     className="percentage-change"
                     style={{ color: getPriceChangeColor(stock.change) }}
                   >
@@ -129,7 +130,7 @@ function StockDashboard() {
       )}
 
       {/* 股票详情模态框 */}
-      <StockDetailModal 
+      <StockDetailModal
         stock={selectedStock}
         isOpen={showDetailModal}
         onClose={handleCloseModal}
