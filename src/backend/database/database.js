@@ -40,12 +40,21 @@ class Database {
         queueLimit: 0,
         acquireTimeout: 60000,
         timeout: 60000,
-        reconnect: true
+        reconnect: true,
+        // 设置时区为UTC，确保所有日期时间操作都使用UTC
+        timezone: 'Z',
+        // 日期字符串处理
+        dateStrings: true
       });
 
       // 测试连接
       const connection = await this.pool.getConnection();
       console.log('✅ Database connected successfully');
+      
+      // 设置MySQL会话时区为UTC
+      await connection.execute("SET time_zone = '+00:00'");
+      console.log('✅ Database timezone set to UTC');
+      
       connection.release();
 
       // 创建表

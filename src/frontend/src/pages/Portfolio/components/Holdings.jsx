@@ -59,7 +59,7 @@ function Holdings({ portfolio, onTransactionSuccess }) {
                 <span>${formatPrice(parseFloat(position.current_value) || 0)}</span>
                 <span className={`gain-loss ${(parseFloat(position.unrealized_gain) || 0) >= 0 ? 'positive' : 'negative'}`}>
                   ${formatPrice(parseFloat(position.unrealized_gain) || 0)}
-                  ({formatPercentage(parseFloat(position.unrealized_gain_percent) || 0)}%)
+                  ({formatPercentage(parseFloat(position.unrealized_gain_percent) || 0)})
                 </span>
                 <span className="action-buttons">
                   <button 

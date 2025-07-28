@@ -69,15 +69,7 @@ CREATE TABLE IF NOT EXISTS stocks (
   name VARCHAR(100) NOT NULL,
   sector VARCHAR(50),
   industry VARCHAR(100),
-  description TEXT,
-  price DECIMAL(10,2) NOT NULL,
-  previous_price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  change_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  change_percent DECIMAL(5,2) NOT NULL DEFAULT 0.00,
-  volume BIGINT DEFAULT 0,
-  market_cap BIGINT DEFAULT 0,
-  last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  description TEXT
 ) ENGINE=InnoDB;
 
 -- 创建观察列表表

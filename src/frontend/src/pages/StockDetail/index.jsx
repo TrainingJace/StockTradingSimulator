@@ -34,6 +34,7 @@ const StockDetail = () => {
     const fetchStockData = async (stockSymbol) => {
         try {
             setLoadingStock(true);
+            // stockApi会自动从localStorage获取用户的simulation_date
             const response = await stockApi.getStocks();
 
             if (response.success && response.data) {

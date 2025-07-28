@@ -10,6 +10,7 @@ function StockDashboard() {
   const [showDetailModal, setShowDetailModal] = useState(false)
 
   // 使用混合搜索功能 - 外部API + 本地过滤
+  // stockApi会自动从localStorage获取用户的simulation_date
   const {
     data: stocks,
     loading,

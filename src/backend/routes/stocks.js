@@ -17,6 +17,10 @@ router.get('/market/status', stockController.getMarketStatus);
 // 获取涨跌幅排行 - 必须在 /:symbol 之前
 router.get('/market/movers', stockController.getTopMovers);
 
+// 历史数据管理端点 - 必须在 /:symbol 之前
+router.post('/history/initialize', stockController.initializeHistoryData);
+router.get('/history/status', stockController.checkHistoryDataStatus);
+
 // 获取单个股票价格
 router.get('/:symbol', stockController.getStockPrice);
 
