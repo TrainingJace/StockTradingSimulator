@@ -20,10 +20,10 @@ const config = {
   // API 配置
   apis: {
     stock: {
-      provider: 'alpaca', // 或 'finnhub', 'polygon' 等
+      provider: 'twelvedata', // 或 'finnhub', 'polygon' 等
       apiKey: process.env.STOCK_API_KEY,
       apiSecret: process.env.STOCK_API_SECRET,
-      baseUrl: 'https://api.alpaca.markets/v2',
+      baseUrl: 'https://api.twelvedata.com',
       timeout: 10000
     },
     news: {
