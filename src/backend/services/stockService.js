@@ -4,8 +4,7 @@ const axios = require('axios');
 class StockService {
   constructor() {
     this.db = require('../database/database');
-    this.TWELVEDATA_API_KEY = process.env.STOCK_API_KEY;
-    console.log('StockService initialized with API key:', this.TWELVEDATA_API_KEY ? 'configured' : 'missing');
+
   }
 
   async getStockPrice(symbol) {
@@ -51,84 +50,7 @@ class StockService {
   async searchStocks(query) {
     console.log(`Searching stocks with query: ${query}`);
 
-    try {
-      // 首先尝试调用外部API
-      const externalResults = await this.searchFromTwelveDataAPI(query);
 
-      if (externalResults && externalResults.length > 0) {
-        console.log(`外部API返回 ${externalResults.length} 条结果`);
-        return externalResults;
-      }
-
-      // 如果外部API没有结果，回退到本地数据库搜索
-      console.log('外部API无结果，回退到本地数据库搜索...');
-      return await this.searchFromLocalDatabase(query);
-
-    } catch (error) {
-      console.error('外部API调用失败:', error.message);
-
-      // API调用失败时，回退到本地数据库搜索
-      console.log('回退到本地数据库搜索...');
-      return await this.searchFromLocalDatabase(query);
-    }
-  }
-
-  // 调用 Twelve Data API 搜索股票
-  async searchFromTwelveDataAPI(query) {
-    try {
-      const apiUrl = 'https://api.twelvedata.com/symbol_search';
-      console.log(`调用外部API: ${apiUrl}?symbol=${query}`);
-
-      const response = await axios.get(apiUrl, {
-        params: {
-          symbol: query,
-          apikey: this.TWELVEDATA_API_KEY
-        },
-        timeout: 8000 // 8秒超时
-      });
-
-      console.log('外部API响应状态:', response.status);
-      console.log('外部API响应数据结构:', {
-        hasData: !!response.data,
-        hasDataField: !!(response.data && response.data.data),
-        isArray: !!(response.data && response.data.data && Array.isArray(response.data.data)),
-        length: response.data && response.data.data ? response.data.data.length : 0
-      });
-
-      if (response.data && response.data.data && Array.isArray(response.data.data)) {
-        console.log(`外部API返回 ${response.data.data.length} 条原始结果`);
-
-        // 格式化外部API返回的数据，显示指定字段
-        const formattedResults = response.data.data.map(stock => ({
-          symbol: stock.symbol || '',
-          name: stock.instrument_name || stock.name || '',
-          exchange: stock.exchange || '',
-          mic_code: stock.mic_code || '',
-          country: stock.country || '',
-          type: stock.instrument_type || '',
-          source: 'external' // 标记为外部数据源
-        }));
-
-        console.log(`格式化后返回 ${formattedResults.length} 条结果`);
-        console.log('第一条结果示例:', formattedResults[0]);
-
-        return formattedResults;
-      } else {
-        console.log('外部API返回数据格式不正确或为空');
-        if (response.data) {
-          console.log('实际返回数据:', JSON.stringify(response.data, null, 2));
-        }
-      }
-
-      return [];
-    } catch (error) {
-      console.error('Twelve Data API调用失败:', error.message);
-      throw error;
-    }
-  }
-
-  // 本地数据库搜索（备选方案）
-  async searchFromLocalDatabase(query) {
     try {
       const searchQuery = `
         SELECT * FROM stocks 
@@ -138,10 +60,8 @@ class StockService {
       `;
       const searchTerm = `%${query}%`;
       const result = await this.db.execute(searchQuery, [searchTerm, searchTerm]);
-      return result.map(stock => ({
-        ...this.formatStockData(stock),
-        source: 'local' // 标记为本地数据源
-      }));
+      return result.map(this.formatStockData);
+
     } catch (error) {
       console.error('本地数据库搜索错误:', error);
       return [];
