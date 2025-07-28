@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Pie, Line } from 'react-chartjs-2';
 import { Chart, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement } from 'chart.js';
 import Modal from 'react-modal';
-import Analysis from './Analysis'; // 导入 Analysis 组件
+import Analysis from './Analysis';
 import './Analytics.css';
+import { analyticsApi } from '../../api/analyticsApi';
 
 // 注册Chart.js组件
 Chart.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement);
@@ -36,25 +37,7 @@ const Analytics = () => {
     { label: 'Year to Date', value: 'ytd' },
   ];
 
-  // 模拟股票详情数据
-  const mockDetails = {
-    symbol: 'AAPL',
-    name: 'Apple Inc.',
-    priceHistory: [
-      { date: '2025-07-21', price: 180 },
-      { date: '2025-07-22', price: 182 },
-      { date: '2025-07-23', price: 185 },
-      { date: '2025-07-24', price: 187 },
-    ],
-    holding: 100,
-    profit: 820,
-    positionHistory: [
-      { date: '2025-07-21', holding: 100 },
-      { date: '2025-07-22', holding: 100 },
-      { date: '2025-07-23', holding: 100 },
-      { date: '2025-07-24', holding: 100 },
-    ]
-  };
+  // ...existing code...
 
   // 状态管理
   const [analyticsData, setAnalyticsData] = useState(null);
@@ -64,41 +47,18 @@ const Analytics = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalStock, setModalStock] = useState(null);
 
-  // 加载分析数据
+  // 加载分析数据（从后端API获取）
   useEffect(() => {
     setLoading(true);
-    // 模拟API请求延迟
-    setTimeout(() => {
-      setAnalyticsData({
-        totalValue: 120000,
-        totalReturn: 15000,
-        returnPercentage: 14.29,
-        dailyReturns: [
-          { date: '2025-07-21', value: 118000 },
-          { date: '2025-07-22', value: 119000 },
-          { date: '2025-07-23', value: 119500 },
-          { date: '2025-07-24', value: 120000 },
-        ],
-        topPerformers: [
-          { symbol: 'AAPL', change: 8.2 },
-          { symbol: 'TSLA', change: 6.5 },
-          { symbol: 'NVDA', change: 5.9 }
-        ],
-        worstPerformers: [
-          { symbol: 'BABA', change: -4.1 },
-          { symbol: 'PDD', change: -3.7 },
-          { symbol: 'JD', change: -2.9 }
-        ],
-        assetDistribution: [
-          { symbol: 'AAPL', percent: 35 },
-          { symbol: 'TSLA', percent: 25 },
-          { symbol: 'NVDA', percent: 20 },
-          { symbol: 'BABA', percent: 10 },
-          { symbol: 'JD', percent: 10 }
-        ]
+    analyticsApi.getPortfolioAnalytics()
+      .then(data => {
+        setAnalyticsData(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message || 'Failed to load analytics data');
+        setLoading(false);
       });
-      setLoading(false);
-    }, 800);
   }, [selectedRange]);
 
   // 加载状态
