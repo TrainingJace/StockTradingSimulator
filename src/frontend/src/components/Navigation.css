@@ -96,6 +96,55 @@
   gap: 15px;
 }
 
+.simulation-date {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(102, 126, 234, 0.1);
+  padding: 8px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.date-label {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.date-value {
+  font-size: 0.9rem;
+  color: #333;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+}
+
+.advance-date-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.3s ease;
+  margin-left: 4px;
+}
+
+.advance-date-btn:hover {
+  background: #5a67d8;
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.advance-date-btn:active {
+  transform: scale(0.95);
+}
+
 .user-greeting {
   color: #333;
   font-weight: 600;
@@ -150,6 +199,25 @@
     gap: 10px;
   }
 
+  .simulation-date {
+    padding: 6px 10px;
+    gap: 6px;
+  }
+
+  .date-label {
+    font-size: 0.8rem;
+  }
+
+  .date-value {
+    font-size: 0.85rem;
+  }
+
+  .advance-date-btn {
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+  }
+
   .user-greeting {
     font-size: 0.8rem;
   }
@@ -172,5 +240,24 @@
 
   .auth-links {
     gap: 10px;
+  }
+
+  .simulation-date {
+    padding: 4px 8px;
+    gap: 4px;
+  }
+
+  .date-label {
+    font-size: 0.75rem;
+  }
+
+  .date-value {
+    font-size: 0.8rem;
+  }
+
+  .advance-date-btn {
+    width: 18px;
+    height: 18px;
+    font-size: 9px;
   }
 }

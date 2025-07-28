@@ -121,6 +121,7 @@ class AuthService {
   async updateCurrentDate(userId, newDate) {
     console.log(`Updating simulation date for user ${userId}: ${newDate}`);
     try {
+      // 使用指定的日期更新
       const query = 'UPDATE users SET simulation_date = ?, updated_at = NOW() WHERE id = ?';
       await this.db.execute(query, [newDate, userId]);
       
@@ -128,6 +129,21 @@ class AuthService {
       return await this.getUserById(userId);
     } catch (error) {
       console.error('Error updating user simulation date:', error);
+      throw error;
+    }
+  }
+
+  async advanceSimulationDate(userId) {
+    console.log(`Advancing simulation date for user ${userId}`);
+    try {
+      // 使用 DATE_ADD 函数直接在数据库中将日期推进一天
+      const query = 'UPDATE users SET simulation_date = DATE_ADD(simulation_date, INTERVAL 1 DAY), updated_at = NOW() WHERE id = ?';
+      await this.db.execute(query, [userId]);
+      
+      // 返回更新后的用户
+      return await this.getUserById(userId);
+    } catch (error) {
+      console.error('Error advancing user simulation date:', error);
       throw error;
     }
   }
@@ -181,7 +197,7 @@ class AuthService {
     console.log(`Generating token for user: ${user.username}`);
     return jwt.sign(
       { 
-        id: user.id, 
+        userId: user.id,  // 使用 userId 而不是 id 
         username: user.username,
         email: user.email
       },

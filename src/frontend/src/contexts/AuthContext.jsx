@@ -79,6 +79,27 @@ export const AuthProvider = ({ children }) => {
     return user?.id || null;
   };
 
+  const updateUser = (updatedUserData) => {
+    const newUser = { ...user, ...updatedUserData };
+    setUser(newUser);
+    localStorage.setItem('user', JSON.stringify(newUser));
+  };
+
+  const advanceSimulationDate = async () => {
+    try {
+      const response = await authApi.advanceSimulationDate();
+      if (response.success) {
+        // 更新本地用户数据
+        updateUser(response.data);
+        return { success: true, data: response.data };
+      } else {
+        return { success: false, error: response.error };
+      }
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  };
+
   const value = {
     user,
     token,
@@ -88,6 +109,8 @@ export const AuthProvider = ({ children }) => {
     logout,
     isAuthenticated,
     getCurrentUserId,
+    updateUser,
+    advanceSimulationDate,
     clearAuth
   };
 

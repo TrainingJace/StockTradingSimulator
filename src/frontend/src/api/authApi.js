@@ -35,6 +35,12 @@ export const authApi = {
     return response;
   },
 
+  // 将模拟日期向前推一天
+  async advanceSimulationDate() {
+    const response = await apiClient.post('/auth/advance-date');
+    return response;
+  },
+
   // ========== 用户管理功能 ==========
 
   // 根据ID获取用户信息

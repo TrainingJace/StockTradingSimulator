@@ -1,5 +1,5 @@
 const express = require('express');
-const authController = require('../controllers/auth');
+const authController = require('../controllers/authController');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -13,6 +13,7 @@ router.post('/verify', authController.verifyToken);
 // 需要认证的路由
 router.get('/me', authenticateToken, authController.getCurrentUser);
 router.put('/current-date', authenticateToken, authController.updateCurrentDate);
+router.post('/advance-date', authenticateToken, authController.advanceSimulationDate);
 
 // ========== 用户管理路由 ==========
 // 根据用户名获取用户

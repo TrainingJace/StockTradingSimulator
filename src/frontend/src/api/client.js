@@ -10,9 +10,13 @@ class ApiClient {
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
     
+    // 从localStorage获取token
+    const token = localStorage.getItem('token');
+    
     const config = {
       headers: {
         'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }), // 如果有token就添加到头部
         ...options.headers,
       },
       ...options,
