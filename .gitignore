@@ -191,6 +191,9 @@ config/prod.js
 *.swo
 *~
 
+# VS Code Local History
+.history/
+
 # Test files
 coverage/
 .nyc_output/
