@@ -22,18 +22,12 @@ class TradingController {
         });
       }
 
-      // TODO: 实现买入订单逻辑
-      // const result = await tradingService.executeBuyOrder(userId, symbol, shares, price);
+      // 执行买入订单
+      const result = await tradingService.executeBuyOrder(userId, symbol, shares, price);
 
       res.json({
         success: true,
-        data: {
-          type: 'BUY',
-          symbol,
-          shares,
-          price,
-          total: shares * price
-        },
+        data: result.data,
         message: 'Buy order executed successfully'
       });
     } catch (error) {
@@ -66,18 +60,12 @@ class TradingController {
         });
       }
 
-      // TODO: 实现卖出订单逻辑
-      // const result = await tradingService.executeSellOrder(userId, symbol, shares, price);
+      // 执行卖出订单
+      const result = await tradingService.executeSellOrder(userId, symbol, shares, price);
 
       res.json({
         success: true,
-        data: {
-          type: 'SELL',
-          symbol,
-          shares,
-          price,
-          total: shares * price
-        },
+        data: result.data,
         message: 'Sell order executed successfully'
       });
     } catch (error) {
@@ -95,12 +83,16 @@ class TradingController {
       const userId = req.user.userId;
       const { limit = 50, offset = 0 } = req.query;
 
-      // TODO: 实现获取交易历史逻辑
-      // const transactions = await tradingService.getUserTransactions(userId, parseInt(limit), parseInt(offset));
+      // 确保参数是有效的数字
+      const limitNum = parseInt(limit) || 50;
+      const offsetNum = parseInt(offset) || 0;
+
+      // 获取交易历史
+      const result = await tradingService.getUserTransactions(userId, limitNum, offsetNum);
 
       res.json({
         success: true,
-        data: [], // 临时返回空数组
+        data: result.data,
         message: 'Transaction history retrieved successfully'
       });
     } catch (error) {

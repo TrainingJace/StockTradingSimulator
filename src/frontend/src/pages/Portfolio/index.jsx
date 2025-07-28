@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useAsyncData } from '../../hooks'
-import { portfolioApi } from '../../api'
+import { portfolioApi, tradingApi } from '../../api'
 import { useAuth } from '../../hooks'
 import { formatPrice, formatPercentage, getPriceChangeColor, formatDate, getErrorMessage } from '../../utils/formatters'
 import './Portfolio.css'
@@ -30,17 +30,39 @@ function Portfolio() {
     }
   );
 
+  // 获取交易历史数据
+  const {
+    data: transactionHistory,
+    loading: transactionsLoading,
+    error: transactionsError,
+    refetch: refetchTransactions
+  } = useAsyncData(
+    () => tradingApi.getTransactionHistory({ limit: 100 }),
+    [userId],
+    {
+      immediate: isAuthenticated() && userId && activeTab === 'transactions',
+      onError: (err) => {
+        if (!isAuthenticated()) {
+          return 'Please login first';
+        }
+        return getErrorMessage(err);
+      }
+    }
+  );
+
   // 模拟观察列表数据 - 后续需要从API获取
   const [watchlist, setWatchlist] = useState([
     { symbol: 'TSLA', name: 'Tesla Inc', price: 234.56, change: 12.34, changePercent: 5.56 },
     { symbol: 'NVDA', name: 'NVIDIA Corp', price: 456.78, change: -8.90, changePercent: -1.91 }
   ]);
 
-  // 模拟交易历史数据 - 后续需要从API获取
-  const [transactions, setTransactions] = useState([
-    { id: 1, symbol: 'AAPL', type: 'BUY', quantity: 10, price: 150.00, date: '2024-01-15', total: 1500.00 },
-    { id: 2, symbol: 'GOOGL', type: 'SELL', quantity: 5, price: 2800.00, date: '2024-01-14', total: 14000.00 }
-  ]);
+  // 处理tab切换，当切换到transactions tab时获取数据  
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    if (tab === 'transactions' && !transactionHistory) {
+      refetchTransactions();
+    }
+  };
 
   if (loading) {
     return (
@@ -143,6 +165,33 @@ function Portfolio() {
         );
 
       case 'transactions':
+        if (transactionsLoading) {
+          return (
+            <div className="transactions-section">
+              <div className="loading">
+                <div className="loading-spinner"></div>
+                <p>Loading transactions...</p>
+              </div>
+            </div>
+          );
+        }
+
+        if (transactionsError) {
+          return (
+            <div className="transactions-section">
+              <div className="error-message">
+                ❌ {transactionsError}
+                <button onClick={refetchTransactions} className="retry-btn">
+                  重试
+                </button>
+              </div>
+            </div>
+          );
+        }
+
+        // transactionHistory 已经是数组了，不需要再访问 .data
+        const transactions = transactionHistory || [];
+        
         return (
           <div className="transactions-section">
             {transactions.length > 0 ? (
@@ -150,6 +199,7 @@ function Portfolio() {
                 <div className="table-header">
                   <span>Date</span>
                   <span>Stock Symbol</span>
+                  <span>Stock Name</span>
                   <span>Action</span>
                   <span>Quantity</span>
                   <span>Price</span>
@@ -157,14 +207,17 @@ function Portfolio() {
                 </div>
                 {transactions.map((transaction) => (
                   <div key={transaction.id} className="table-row">
-                    <span>{formatDate(transaction.date)}</span>
+                    <span>{formatDate(transaction.timestamp)}</span>
                     <span className="stock-symbol">{transaction.symbol}</span>
+                    <span>{transaction.stockName || '-'}</span>
                     <span className={`transaction-type ${transaction.type.toLowerCase()}`}>
                       {transaction.type === 'BUY' ? 'Buy' : 'Sell'}
                     </span>
-                    <span>{transaction.quantity}</span>
+                    <span>{transaction.shares}</span>
                     <span>${formatPrice(transaction.price)}</span>
-                    <span>${formatPrice(transaction.total)}</span>
+                    <span className={`total ${transaction.type.toLowerCase()}`}>
+                      ${formatPrice(transaction.total)}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -216,19 +269,19 @@ function Portfolio() {
         <div className="tab-buttons">
           <button 
             className={`tab-btn ${activeTab === 'holdings' ? 'active' : ''}`}
-            onClick={() => setActiveTab('holdings')}
+            onClick={() => handleTabChange('holdings')}
           >
             Holdings
           </button>
           <button 
             className={`tab-btn ${activeTab === 'watchlist' ? 'active' : ''}`}
-            onClick={() => setActiveTab('watchlist')}
+            onClick={() => handleTabChange('watchlist')}
           >
             Watchlist
           </button>
           <button 
             className={`tab-btn ${activeTab === 'transactions' ? 'active' : ''}`}
-            onClick={() => setActiveTab('transactions')}
+            onClick={() => handleTabChange('transactions')}
           >
             Transaction History
           </button>

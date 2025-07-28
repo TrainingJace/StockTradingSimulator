@@ -3,6 +3,7 @@ class PortfolioService {
   constructor() {
     // 初始化数据库连接
     this.db = require('../database/database');
+    this.authService = require('./authService');
   }
 
   async getPortfolioByUserId(userId) {
@@ -17,20 +18,14 @@ class PortfolioService {
       }
 
       const portfolioData = portfolio[0];
-      console.log(`Portfolio found: ${JSON.stringify(portfolioData)}`);
 
       // 获取持仓信息
       const positionsQuery = 'SELECT * FROM positions WHERE portfolio_id = ?';
       const positions = await this.db.execute(positionsQuery, [portfolioData.id]);
 
-      // 获取交易历史
-      const transactionsQuery = 'SELECT * FROM transactions WHERE portfolio_id = ? ORDER BY timestamp DESC LIMIT 20';
-      const transactions = await this.db.execute(transactionsQuery, [portfolioData.id]);
-
       return {
         ...portfolioData,
-        positions: positions || [],
-        transactions: transactions || []
+        positions: positions || []
       };
     } catch (error) {
       console.error('Error getting portfolio:', error);
@@ -54,8 +49,7 @@ class PortfolioService {
       
       return {
         ...portfolio[0],
-        positions: [],
-        transactions: []
+        positions: []
       };
     } catch (error) {
       console.error('Error creating portfolio:', error);
@@ -63,25 +57,111 @@ class PortfolioService {
     }
   }
 
-  async executeTrade(userId, tradeData) {
-    console.log(`Executing trade for user ${userId}:`, tradeData);
-    // TODO: 实现交易执行功能
-    // 暂时返回成功状态而不是抛出错误
-    return { success: true, message: '交易功能暂未实现' };
+  // 更新投资组合总价值（在交易后调用）
+  async updatePortfolioTotalValue(userId) {
+    console.log(`Updating portfolio total value for user ${userId}`);
+    try {
+      const portfolioRows = await this.db.execute(
+        'SELECT * FROM portfolios WHERE user_id = ?',
+        [userId]
+      );
+
+      if (portfolioRows.length === 0) {
+        throw new Error('Portfolio not found');
+      }
+
+      const portfolio = portfolioRows[0];
+      
+      if (!portfolio || !portfolio.id) {
+        throw new Error('Invalid portfolio data - missing id');
+      }
+
+      // 获取所有持仓的当前价值
+      const positionRows = await this.db.execute(
+        'SELECT SUM(current_value) as total_positions_value FROM positions WHERE portfolio_id = ?',
+        [portfolio.id]
+      );
+
+      const totalPositionsValue = parseFloat(positionRows[0]?.total_positions_value) || 0;
+      const cashBalance = parseFloat(portfolio.cash_balance) || 0;
+      const initialBalance = parseFloat(portfolio.initial_balance) || 0;
+      const newTotalValue = cashBalance + totalPositionsValue;
+
+      // 计算总收益
+      const totalReturn = newTotalValue - initialBalance;
+      const totalReturnPercent = initialBalance > 0 ? ((newTotalValue - initialBalance) / initialBalance) * 100 : 0;
+
+      // 获取用户的模拟日期
+      const simulationDate = await this.authService.getSimulationDate(userId);
+
+      // 更新投资组合
+      await this.db.execute(
+        `UPDATE portfolios 
+         SET total_value = ?, total_return = ?, total_return_percent = ?, updated_at = ?
+         WHERE id = ?`,
+        [newTotalValue, totalReturn, totalReturnPercent, simulationDate, portfolio.id]
+      );
+
+      return {
+        totalValue: newTotalValue,
+        totalReturn,
+        totalReturnPercent
+      };
+    } catch (error) {
+      console.error('Error updating portfolio total value:', error);
+      throw error;
+    }
   }
 
-  async getTransactionHistory(userId, limit = 50) {
-    console.log(`Getting transaction history for user ${userId}, limit: ${limit}`);
-    // TODO: 实现交易历史获取功能
-    // 暂时返回空数组而不是抛出错误
-    return [];
-  }
+  // 更新所有持仓的当前价格和价值
+  async updatePositionPrices(userId, stockPrices) {
+    console.log(`Updating position prices for user ${userId}`);
+    try {
+      const portfolioRows = await this.db.execute(
+        'SELECT * FROM portfolios WHERE user_id = ?',
+        [userId]
+      );
 
-  async updatePortfolioValues(userId, stockPrices) {
-    console.log(`Updating portfolio values for user ${userId}`);
-    // TODO: 实现投资组合价值更新功能
-    // 暂时返回成功状态而不是抛出错误
-    return { success: true, message: '投资组合更新功能暂未实现' };
+      if (portfolioRows.length === 0) {
+        throw new Error('Portfolio not found');
+      }
+
+      const portfolio = portfolioRows[0];
+
+      // 获取所有持仓
+      const positions = await this.db.execute(
+        'SELECT * FROM positions WHERE portfolio_id = ?',
+        [portfolio.id]
+      );
+
+      // 获取用户的模拟日期
+      const simulationDate = await this.authService.getSimulationDate(userId);
+
+      // 更新每个持仓的价格
+      for (const position of positions) {
+        const currentPrice = stockPrices[position.symbol];
+        if (currentPrice) {
+          const currentValue = position.shares * currentPrice;
+          const unrealizedGain = currentValue - position.total_cost;
+          const unrealizedGainPercent = (unrealizedGain / position.total_cost) * 100;
+
+          await this.db.execute(
+            `UPDATE positions 
+             SET current_price = ?, current_value = ?, unrealized_gain = ?, unrealized_gain_percent = ?, updated_at = ?
+             WHERE id = ?`,
+            [currentPrice, currentValue, unrealizedGain, unrealizedGainPercent, simulationDate, position.id]
+          );
+        }
+      }
+
+      // 更新投资组合总价值
+      await this.updatePortfolioTotalValue(userId);
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating position prices:', error);
+      throw error;
+    }
   }
 
   async recalculatePortfolio(userId) {

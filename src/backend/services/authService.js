@@ -46,7 +46,27 @@ class AuthService {
     }
   }
 
-  // ========== 用户创建功能 ==========
+  // ========== 模拟日期管理 ==========
+
+  async getSimulationDate(userId) {
+    try {
+      const query = 'SELECT simulation_date FROM users WHERE id = ?';
+      const result = await this.db.execute(query, [userId]);
+      const user = result[0];
+      
+      if (!user) {
+        throw new Error('User not found');
+      }
+      
+      // 如果没有设置模拟日期，返回当前日期
+      return user.simulation_date || new Date().toISOString().split('T')[0];
+    } catch (error) {
+      console.error('Error getting simulation date:', error);
+      throw error;
+    }
+  }
+
+  // ========== Token 管理 ==========
 
   async createUser(userData) {
     const { username, password, email } = userData;
