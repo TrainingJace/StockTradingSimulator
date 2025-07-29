@@ -18,6 +18,8 @@ const StockDetail = () => {
     const [loadingStock, setLoadingStock] = useState(true);
     const [showBuyModal, setShowBuyModal] = useState(false);
     const [userSimulationDate, setUserSimulationDate] = useState(null);
+    const [chartData, setChartData] = useState(null);
+    const [loadingChart, setLoadingChart] = useState(false);
 
     const currentNews = useMemo(() => {
         const newsList = stockDetail?.news || [];
@@ -30,8 +32,15 @@ const StockDetail = () => {
         if (symbol) {
             fetchUserData();
             fetchStockData(symbol);
+            fetchChartData(symbol, selectedTimeframe);
         }
     }, [symbol]);
+
+    useEffect(() => {
+        if (symbol && selectedTimeframe) {
+            fetchChartData(symbol, selectedTimeframe);
+        }
+    }, [selectedTimeframe]);
 
     useEffect(() => {
         if (stock && stockDetail && symbol) {
@@ -185,6 +194,78 @@ const StockDetail = () => {
         }
     };
 
+    const fetchChartData = async (stockSymbol, timeframe) => {
+        try {
+            setLoadingChart(true);
+
+            // 构建API参数
+            const apiKey = '7a2f00f6984b4c24a36501313ffd15e0';
+            let url;
+
+            if (timeframe === 'daily') {
+                // Daily 使用简化的API调用格式
+                url = `https://api.twelvedata.com/time_series?symbol=${stockSymbol}&interval=1min&apikey=${apiKey}`;
+            } else {
+                // Weekly 和 Monthly 保持原有的日期范围逻辑
+                const today = new Date();
+                let interval, startDate, endDate;
+                
+                if (timeframe === 'weekly') {
+                    interval = '1day';
+                    const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    startDate = weekAgo.toISOString().split('T')[0];
+                    endDate = today.toISOString().split('T')[0];
+                } else if (timeframe === 'monthly') {
+                    interval = '1day';
+                    const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    startDate = monthAgo.toISOString().split('T')[0];
+                    endDate = today.toISOString().split('T')[0];
+                } else {
+                    // 默认使用 weekly 设置
+                    interval = '1day';
+                    const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    startDate = weekAgo.toISOString().split('T')[0];
+                    endDate = today.toISOString().split('T')[0];
+                }
+                
+                url = `https://api.twelvedata.com/time_series?symbol=${stockSymbol}&interval=${interval}&start_date=${startDate}&end_date=${endDate}&apikey=${apiKey}`;
+            }
+
+            console.log('=== FETCHING CHART DATA ===');
+            console.log('URL:', url);
+            console.log('Timeframe:', timeframe);
+
+            const response = await fetch(url);
+            const data = await response.json();
+
+            console.log('Chart API response:', data);
+
+            if (data.status === 'ok' && data.values && Array.isArray(data.values)) {
+                // 处理数据，转换为K线图需要的格式
+                const processedData = data.values.map(item => ({
+                    datetime: item.datetime,
+                    open: parseFloat(item.open),
+                    high: parseFloat(item.high),
+                    low: parseFloat(item.low),
+                    close: parseFloat(item.close),
+                    volume: parseInt(item.volume)
+                })).reverse(); // 反转数组，使最新数据在右侧
+
+                setChartData(processedData);
+                console.log('Processed chart data:', processedData);
+            } else {
+                console.error('Invalid chart data response:', data);
+                // 如果API失败，设置空数据
+                setChartData([]);
+            }
+        } catch (error) {
+            console.error('Error fetching chart data:', error);
+            setChartData([]);
+        } finally {
+            setLoadingChart(false);
+        }
+    };
+
     useEffect(() => {
         if (!stockDetail?.news?.length) return;
 
@@ -247,16 +328,6 @@ const StockDetail = () => {
 
     return (
         <div className="stock-detail-page">
-            <div className="page-header">
-                <div className="stock-title">
-                    <h1>{stock.symbol}</h1>
-                    <span className="stock-full-name">{stock.name}</span>
-                </div>
-                <button className="close-btn" onClick={() => window.close()}>
-                    Close Window
-                </button>
-            </div>
-
             <div className="page-content">
                 {/* 左上角 - K线图 */}
                 <div className="chart-section">
@@ -267,9 +338,16 @@ const StockDetail = () => {
                                 <button
                                     key={timeframe.key}
                                     className={`timeframe-btn ${selectedTimeframe === timeframe.key ? 'active' : ''}`}
-                                    onClick={() => setSelectedTimeframe(timeframe.key)}
+                                    onClick={() => {
+                                        console.log('Timeframe changed to:', timeframe.key);
+                                        setSelectedTimeframe(timeframe.key);
+                                    }}
+                                    disabled={loadingChart}
                                 >
                                     {timeframe.label}
+                                    {loadingChart && selectedTimeframe === timeframe.key && (
+                                        <span style={{ marginLeft: '5px' }}>⏳</span>
+                                    )}
                                 </button>
                             ))}
                         </div>
@@ -287,129 +365,295 @@ const StockDetail = () => {
                                 </span>
                             </div>
                             <div className="simple-chart">
-                                {/* 简单的模拟K线图 */}
-                                <svg width="100%" height="200" viewBox="0 0 400 200">
-                                    {stockDetail.chartData[selectedTimeframe]?.map((data, index) => {
-                                        const x = (index + 1) * (400 / (stockDetail.chartData[selectedTimeframe].length + 1));
-                                        const high = 200 - ((data.high - data.low) / (data.high - data.low)) * 150;
-                                        const low = 200 - ((data.low - data.low) / (data.high - data.low)) * 150;
-                                        const open = 200 - ((data.open - data.low) / (data.high - data.low)) * 150;
-                                        const close = 200 - ((data.close - data.low) / (data.high - data.low)) * 150;
-                                        const color = data.close >= data.open ? '#4CAF50' : '#f44336';
+                                {loadingChart ? (
+                                    <div className="chart-loading">
+                                        <p>Loading chart data...</p>
+                                    </div>
+                                ) : chartData && chartData.length > 0 ? (
+                                    <svg width="100%" height="100%" viewBox="0 0 800 500" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)' }}>
+                                        {/* 添加渐变定义 */}
+                                        <defs>
+                                            <linearGradient id="bullishGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                <stop offset="0%" stopColor="#4CAF50" stopOpacity="0.8" />
+                                                <stop offset="100%" stopColor="#2E7D32" stopOpacity="1" />
+                                            </linearGradient>
+                                            <linearGradient id="bearishGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                <stop offset="0%" stopColor="#f44336" stopOpacity="0.8" />
+                                                <stop offset="100%" stopColor="#C62828" stopOpacity="1" />
+                                            </linearGradient>
+                                            <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+                                                <feDropShadow dx="2" dy="2" stdDeviation="2" floodOpacity="0.3" />
+                                            </filter>
+                                        </defs>
 
-                                        return (
-                                            <g key={index}>
-                                                <line x1={x} y1={high} x2={x} y2={low} stroke={color} strokeWidth="1" />
-                                                <rect
-                                                    x={x - 3}
-                                                    y={Math.min(open, close)}
-                                                    width="6"
-                                                    height={Math.abs(close - open)}
-                                                    fill={color}
-                                                />
-                                            </g>
-                                        );
-                                    })}
-                                </svg>
+                                        {/* 网格线 */}
+                                        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => (
+                                            <line
+                                                key={`grid-h-${i}`}
+                                                x1="60"
+                                                y1={40 + i * 42}
+                                                x2="740"
+                                                y2={40 + i * 42}
+                                                stroke="rgba(102, 126, 234, 0.1)"
+                                                strokeWidth="1"
+                                                strokeDasharray="3,3"
+                                            />
+                                        ))}
+                                        {Array.from({ length: Math.min(chartData.length, 12) }, (_, i) => (
+                                            <line
+                                                key={`grid-v-${i}`}
+                                                x1={80 + i * 55}
+                                                y1="40"
+                                                x2={80 + i * 55}
+                                                y2="460"
+                                                stroke="rgba(102, 126, 234, 0.1)"
+                                                strokeWidth="1"
+                                                strokeDasharray="3,3"
+                                            />
+                                        ))}
+
+                                        {chartData.map((data, index) => {
+                                            // 计算价格范围
+                                            const allPrices = chartData.flatMap(d => [d.high, d.low]);
+                                            const maxPrice = Math.max(...allPrices);
+                                            const minPrice = Math.min(...allPrices);
+                                            const priceRange = maxPrice - minPrice;
+
+                                            // 避免除以零
+                                            const normalizedRange = priceRange || 1;
+
+                                            // 计算位置
+                                            const x = 70 + (index * (660 / (chartData.length - 1 || 1)));
+                                            const high = 50 + ((maxPrice - data.high) / normalizedRange) * 400;
+                                            const low = 50 + ((maxPrice - data.low) / normalizedRange) * 400;
+                                            const open = 50 + ((maxPrice - data.open) / normalizedRange) * 400;
+                                            const close = 50 + ((maxPrice - data.close) / normalizedRange) * 400;
+
+                                            // 确保坐标在有效范围内
+                                            const validHigh = Math.max(50, Math.min(450, high));
+                                            const validLow = Math.max(50, Math.min(450, low));
+                                            const validOpen = Math.max(50, Math.min(450, open));
+                                            const validClose = Math.max(50, Math.min(450, close));
+
+                                            const isBullish = data.close >= data.open;
+                                            const color = isBullish ? '#4CAF50' : '#f44336';
+                                            const gradient = isBullish ? 'url(#bullishGradient)' : 'url(#bearishGradient)';
+
+                                            return (
+                                                <g key={index} className="candlestick" filter="url(#shadow)">
+                                                    {/* 上下影线 */}
+                                                    <line
+                                                        x1={x}
+                                                        y1={validHigh}
+                                                        x2={x}
+                                                        y2={validLow}
+                                                        stroke={color}
+                                                        strokeWidth="3"
+                                                        strokeLinecap="round"
+                                                    />
+                                                    {/* K线实体 */}
+                                                    <rect
+                                                        x={x - 8}
+                                                        y={Math.min(validOpen, validClose)}
+                                                        width="16"
+                                                        height={Math.max(Math.abs(validClose - validOpen), 3)}
+                                                        fill={gradient}
+                                                        stroke={color}
+                                                        strokeWidth="2"
+                                                        rx="2"
+                                                        ry="2"
+                                                    />
+                                                    {/* 悬停区域 */}
+                                                    <rect
+                                                        x={x - 15}
+                                                        y={validHigh - 10}
+                                                        width="30"
+                                                        height={validLow - validHigh + 20}
+                                                        fill="transparent"
+                                                        className="hover-area"
+                                                    >
+                                                        <title>
+                                                            {`${data.datetime}
+Open: $${data.open.toFixed(2)}
+High: $${data.high.toFixed(2)}
+Low: $${data.low.toFixed(2)}
+Close: $${data.close.toFixed(2)}
+Volume: ${data.volume.toLocaleString()}`}
+                                                        </title>
+                                                    </rect>
+                                                    
+                                                    {/* 股价标签 - 显示收盘价 */}
+                                                    <text
+                                                        x={x}
+                                                        y={validLow + 25}
+                                                        fontSize="10"
+                                                        fill="#2c3e50"
+                                                        textAnchor="middle"
+                                                        fontWeight="600"
+                                                        style={{ 
+                                                            textShadow: '1px 1px 2px rgba(255,255,255,0.8)',
+                                                            filter: 'drop-shadow(0px 1px 1px rgba(0,0,0,0.3))'
+                                                        }}
+                                                    >
+                                                        ${data.close.toFixed(2)}
+                                                    </text>
+                                                </g>
+                                            );
+                                        })}
+
+                                        {/* 添加价格标签 */}
+                                        {chartData.length > 0 && (
+                                            <>
+                                                <rect x="10" y="35" width="80" height="25" fill="rgba(255, 255, 255, 0.9)" rx="6" stroke="rgba(102, 126, 234, 0.3)" />
+                                                <text x="20" y="52" fontSize="14" fill="#2c3e50" fontWeight="600">
+                                                    ${Math.max(...chartData.map(d => d.high)).toFixed(2)}
+                                                </text>
+                                                <rect x="10" y="440" width="80" height="25" fill="rgba(255, 255, 255, 0.9)" rx="6" stroke="rgba(102, 126, 234, 0.3)" />
+                                                <text x="20" y="457" fontSize="14" fill="#2c3e50" fontWeight="600">
+                                                    ${Math.min(...chartData.map(d => d.low)).toFixed(2)}
+                                                </text>
+
+                                                {/* 添加时间轴标签 */}
+                                                {chartData.length > 0 && chartData.length <= 20 && (
+                                                    chartData.map((data, index) => {
+                                                        if (index % Math.ceil(chartData.length / 6) === 0) {
+                                                            const x = 70 + (index * (660 / (chartData.length - 1 || 1)));
+                                                            const date = new Date(data.datetime);
+                                                            const label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                                            return (
+                                                                <text key={`time-${index}`} x={x} y="485" fontSize="12" fill="#666" textAnchor="middle">
+                                                                    {label}
+                                                                </text>
+                                                            );
+                                                        }
+                                                        return null;
+                                                    })
+                                                )}
+                                            </>
+                                        )}
+                                    </svg>
+                                ) : (
+                                    <div className="chart-error">
+                                        <p>No chart data available</p>
+                                        <p style={{ fontSize: '12px', color: '#666' }}>
+                                            Try selecting a different timeframe
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* 右上角 - 公司Logo和简介 */}
-                <div className="company-info-section">
-                    <div className="company-header">
-                        <img
-                            src={stockDetail.logo}
-                            alt={`${stock.name} logo`}
-                            className="company-logo"
-                            onError={(e) => {
-                                e.target.src = `https://via.placeholder.com/80x80/667eea/ffffff?text=${stock.symbol}`;
-                            }}
-                        />
-                        <div className="company-details">
-                            <h3>{stock.name}</h3>
-                            <span className="symbol">Symbol: {stock.symbol}</span>
-                            <span className="sector">Sector: {stock.sector || 'N/A'}</span>
-                            <span className="exchange">Exchange: {stock.exchange || 'N/A'}</span>
+                {/* 右侧面板 */}
+                <div className="right-panel">
+                    {/* 公司Logo和简介 */}
+                    <div className="company-info-section">
+                        <div className="company-header">
+                            <img
+                                src={stockDetail.logo}
+                                alt={`${stock.name} logo`}
+                                className="company-logo"
+                                onError={(e) => {
+                                    e.target.src = `https://via.placeholder.com/80x80/667eea/ffffff?text=${stock.symbol}`;
+                                }}
+                            />
+                            <div className="company-details">
+                                <h3>{stock.name}</h3>
+                                <span className="symbol">Symbol: {stock.symbol}</span>
+                                <span className="sector">Sector: {stock.sector || 'N/A'}</span>
+                                <span className="exchange">Exchange: {stock.exchange || 'N/A'}</span>
+                            </div>
                         </div>
-                    </div>
-                    <div className="company-description">
-                        <p>{stock.description}</p>
+                        <div className="company-description">
+                            <p>{stock.description}</p>
+                        </div>
+
+                        {/* 基本信息 */}
+                        <div className="basic-info">
+                            <h4>Basic Information</h4>
+                            <div className="info-grid">
+                                <div className="info-item">
+                                    <span className="info-label">CIK</span>
+                                    <span className="info-value">{stock.cik || 'N/A'}</span>
+                                </div>
+                                <div className="info-item">
+                                    <span className="info-label">Currency</span>
+                                    <span className="info-value">{stock.currency || 'N/A'}</span>
+                                </div>
+                                <div className="info-item">
+                                    <span className="info-label">Country</span>
+                                    <span className="info-value">{stock.country || 'N/A'}</span>
+                                </div>
+                                <div className="info-item">
+                                    <span className="info-label">Address</span>
+                                    <span className="info-value">{stock.address || 'N/A'}</span>
+                                </div>
+                                <div className="info-item">
+                                    <span className="info-label">Official Website</span>
+                                    <span className="info-value">
+                                        {stock.officialSite ? (
+                                            <a href={stock.officialSite} target="_blank" rel="noopener noreferrer">
+                                                Visit Website
+                                            </a>
+                                        ) : 'N/A'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 财务指标 */}
+                        <div className="financial-metrics">
+                            <h4>Financial Metrics</h4>
+                            <div className="metrics-grid">
+                                <div className="metric">
+                                    <span className="metric-label">Market Cap</span>
+                                    <span className="metric-value">
+                                        {stock.marketCapitalization ?
+                                            `$${(parseFloat(stock.marketCapitalization) / 1000000000).toFixed(1)}B` :
+                                            (stock.marketCap ? `$${(stock.marketCap / 1000000000).toFixed(1)}B` : 'N/A')
+                                        }
+                                    </span>
+                                </div>
+                                <div className="metric">
+                                    <span className="metric-label">EBITDA</span>
+                                    <span className="metric-value">
+                                        {stock.ebitda ?
+                                            `$${(parseFloat(stock.ebitda) / 1000000000).toFixed(1)}B` :
+                                            'N/A'
+                                        }
+                                    </span>
+                                </div>
+                                <div className="metric">
+                                    <span className="metric-label">PE Ratio</span>
+                                    <span className="metric-value">{stock.peRatio || 'N/A'}</span>
+                                </div>
+                                <div className="metric">
+                                    <span className="metric-label">PEG Ratio</span>
+                                    <span className="metric-value">{stock.pegRatio || 'N/A'}</span>
+                                </div>
+                                <div className="metric">
+                                    <span className="metric-label">Book Value</span>
+                                    <span className="metric-value">{stock.bookValue ? `$${stock.bookValue}` : 'N/A'}</span>
+                                </div>
+                                <div className="metric">
+                                    <span className="metric-label">Volume</span>
+                                    <span className="metric-value">{(stock.volume / 1000000).toFixed(1)}M</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* 基本信息 */}
-                    <div className="basic-info">
-                        <h4>Basic Information</h4>
-                        <div className="info-grid">
-                            <div className="info-item">
-                                <span className="info-label">CIK</span>
-                                <span className="info-value">{stock.cik || 'N/A'}</span>
-                            </div>
-                            <div className="info-item">
-                                <span className="info-label">Currency</span>
-                                <span className="info-value">{stock.currency || 'N/A'}</span>
-                            </div>
-                            <div className="info-item">
-                                <span className="info-label">Country</span>
-                                <span className="info-value">{stock.country || 'N/A'}</span>
-                            </div>
-                            <div className="info-item">
-                                <span className="info-label">Address</span>
-                                <span className="info-value">{stock.address || 'N/A'}</span>
-                            </div>
-                            <div className="info-item">
-                                <span className="info-label">Official Website</span>
-                                <span className="info-value">
-                                    {stock.officialSite ? (
-                                        <a href={stock.officialSite} target="_blank" rel="noopener noreferrer">
-                                            Visit Website
-                                        </a>
-                                    ) : 'N/A'}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 财务指标 */}
-                    <div className="financial-metrics">
-                        <h4>Financial Metrics</h4>
-                        <div className="metrics-grid">
-                            <div className="metric">
-                                <span className="metric-label">Market Cap</span>
-                                <span className="metric-value">
-                                    {stock.marketCapitalization ?
-                                        `$${(parseFloat(stock.marketCapitalization) / 1000000000).toFixed(1)}B` :
-                                        (stock.marketCap ? `$${(stock.marketCap / 1000000000).toFixed(1)}B` : 'N/A')
-                                    }
-                                </span>
-                            </div>
-                            <div className="metric">
-                                <span className="metric-label">EBITDA</span>
-                                <span className="metric-value">
-                                    {stock.ebitda ?
-                                        `$${(parseFloat(stock.ebitda) / 1000000000).toFixed(1)}B` :
-                                        'N/A'
-                                    }
-                                </span>
-                            </div>
-                            <div className="metric">
-                                <span className="metric-label">PE Ratio</span>
-                                <span className="metric-value">{stock.peRatio || 'N/A'}</span>
-                            </div>
-                            <div className="metric">
-                                <span className="metric-label">PEG Ratio</span>
-                                <span className="metric-value">{stock.pegRatio || 'N/A'}</span>
-                            </div>
-                            <div className="metric">
-                                <span className="metric-label">Book Value</span>
-                                <span className="metric-value">{stock.bookValue ? `$${stock.bookValue}` : 'N/A'}</span>
-                            </div>
-                            <div className="metric">
-                                <span className="metric-label">Volume</span>
-                                <span className="metric-value">{(stock.volume / 1000000).toFixed(1)}M</span>
-                            </div>
-                        </div>
+                    {/* 操作按钮 */}
+                    <div className="actions-section">
+                        <button className="action-btn watchlist-btn" onClick={handleAddToWatchlist}>
+                            <span className="btn-icon">👁️</span>
+                            Add to Watchlist
+                        </button>
+                        <button className="action-btn buy-btn" onClick={handleBuyStock}>
+                            <span className="btn-icon">💰</span>
+                            Buy Stock
+                        </button>
                     </div>
                 </div>
 
@@ -463,17 +707,6 @@ const StockDetail = () => {
                             </>
                         )}
                     </div>
-                </div>
-                {/* 右下角 - 操作按钮 */}
-                <div className="actions-section">
-                    <button className="action-btn watchlist-btn" onClick={handleAddToWatchlist}>
-                        <span className="btn-icon">👁️</span>
-                        Add to Watchlist
-                    </button>
-                    <button className="action-btn buy-btn" onClick={handleBuyStock}>
-                        <span className="btn-icon">💰</span>
-                        Buy Stock
-                    </button>
                 </div>
             </div>
 
