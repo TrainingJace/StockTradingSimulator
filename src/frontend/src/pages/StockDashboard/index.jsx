@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useSearchableData } from '../../hooks'
 import { stockApi } from '../../api'
 import { formatPrice, formatPercentage, getPriceChangeColor, formatNumber, getErrorMessage } from '../../utils/formatters'
@@ -8,6 +9,7 @@ import './StockDashboard.css'
 function StockDashboard() {
   const [selectedStock, setSelectedStock] = useState(null)
   const [showDetailModal, setShowDetailModal] = useState(false)
+  const navigate = useNavigate()
 
   // 使用混合搜索功能 - 外部API + 本地过滤
   // stockApi会自动从localStorage获取用户的simulation_date
@@ -33,9 +35,8 @@ function StockDashboard() {
 
 
   const handleStockSelect = (stock) => {
-    // 在新浏览器窗口中打开股票详情页面
-    const stockDetailUrl = `${window.location.origin}/stock/${stock.symbol}`;
-    window.open(stockDetailUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+    // 在同一窗口中导航到股票详情页面
+    navigate(`/stock/${stock.symbol}`);
   };
 
   const handleCloseModal = () => {
