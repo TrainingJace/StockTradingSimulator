@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { stockDetailData, getDefaultStockDetail } from '../../data/stockDetailData.js';
 import { newsApi } from '../../api/newsApi.js';
 import { stockApi } from '../../api';
+import BuyStockModal from '../../components/BuyStockModal.jsx';
 import './StockDetail.css';
 
 const StockDetail = () => {
@@ -14,6 +15,7 @@ const StockDetail = () => {
     const [stock, setStock] = useState(null);
     const [loadingNews, setLoadingNews] = useState(false);
     const [loadingStock, setLoadingStock] = useState(true);
+    const [showBuyModal, setShowBuyModal] = useState(false);
 
     useEffect(() => {
         if (symbol) {
@@ -32,11 +34,13 @@ const StockDetail = () => {
     const fetchStockData = async (stockSymbol) => {
         try {
             setLoadingStock(true);
+            // stockApi会自动从localStorage获取用户的simulation_date
             const response = await stockApi.getStocks();
 
             if (response.success && response.data) {
                 const foundStock = response.data.find(s => s.symbol === stockSymbol);
                 if (foundStock) {
+                    console.log('Found stock data:', foundStock); // 调试信息
                     setStock(foundStock);
                     const detail = stockDetailData[stockSymbol] || getDefaultStockDetail(stockSymbol, foundStock.name);
                     setStockDetail(detail);
@@ -63,8 +67,8 @@ const StockDetail = () => {
                     news: response.data.map(newsItem => ({
                         title: newsItem.title,
                         summary: newsItem.summary || newsItem.content?.substring(0, 200) + '...',
-                        date: new Date(newsItem.publishedAt || newsItem.date).toLocaleDateString('zh-CN'),
-                        source: newsItem.source || '财经新闻'
+                        date: new Date(newsItem.publishedAt || newsItem.date).toLocaleDateString('en-US'),
+                        source: newsItem.source || 'Financial News'
                     }))
                 }));
             }
@@ -91,13 +95,16 @@ const StockDetail = () => {
     const handleAddToWatchlist = () => {
         console.log(`Adding ${stock.symbol} to watchlist`);
         // TODO: 实现添加到观察列表的逻辑
-        alert(`已添加 ${stock.symbol} 到观察列表`);
+        alert(`Added ${stock.symbol} to watchlist`);
     };
 
     const handleBuyStock = () => {
-        console.log(`Buying ${stock.symbol}`);
-        // TODO: 实现购买股票的逻辑
-        alert(`购买 ${stock.symbol} 功能开发中...`);
+        console.log(`Opening buy modal for ${stock.symbol}`);
+        setShowBuyModal(true);
+    };
+
+    const handleCloseBuyModal = () => {
+        setShowBuyModal(false);
     };
 
     const formatPrice = (price) => {
@@ -112,7 +119,7 @@ const StockDetail = () => {
         return (
             <div className="stock-detail-loading">
                 <div className="loading-spinner">
-                    <h2>加载股票信息中...</h2>
+                    <h2>Loading stock information...</h2>
                 </div>
             </div>
         );
@@ -121,16 +128,16 @@ const StockDetail = () => {
     if (!stock || !stockDetail) {
         return (
             <div className="stock-detail-error">
-                <h2>未找到股票信息</h2>
-                <button onClick={() => window.close()}>关闭窗口</button>
+                <h2>Stock information not found</h2>
+                <button onClick={() => window.close()}>Close Window</button>
             </div>
         );
     }
 
     const timeframes = [
-        { key: 'daily', label: '日' },
-        { key: 'weekly', label: '周' },
-        { key: 'monthly', label: '月' }
+        { key: 'daily', label: 'Daily' },
+        { key: 'weekly', label: 'Weekly' },
+        { key: 'monthly', label: 'Monthly' }
     ];
 
     const currentNews = stockDetail.news[currentNewsIndex];
@@ -143,7 +150,7 @@ const StockDetail = () => {
                     <span className="stock-full-name">{stock.name}</span>
                 </div>
                 <button className="close-btn" onClick={() => window.close()}>
-                    关闭窗口
+                    Close Window
                 </button>
             </div>
 
@@ -151,7 +158,7 @@ const StockDetail = () => {
                 {/* 左上角 - K线图 */}
                 <div className="chart-section">
                     <div className="chart-header">
-                        <h3>价格走势</h3>
+                        <h3>Price Trend</h3>
                         <div className="timeframe-buttons">
                             {timeframes.map((timeframe) => (
                                 <button
@@ -219,31 +226,97 @@ const StockDetail = () => {
                         />
                         <div className="company-details">
                             <h3>{stock.name}</h3>
-                            <span className="sector">{stock.sector || 'Technology'}</span>
+                            <span className="symbol">Symbol: {stock.symbol}</span>
+                            <span className="sector">Sector: {stock.sector || 'N/A'}</span>
+                            <span className="exchange">Exchange: {stock.exchange || 'N/A'}</span>
                         </div>
                     </div>
                     <div className="company-description">
-                        <p>{stockDetail.description}</p>
+                        <p>{stock.description}</p>
                     </div>
-                    <div className="key-metrics">
-                        <div className="metric">
-                            <span className="metric-label">市值</span>
-                            <span className="metric-value">${(stock.marketCap / 1000000000).toFixed(1)}B</span>
+
+                    {/* 基本信息 */}
+                    <div className="basic-info">
+                        <h4>Basic Information</h4>
+                        <div className="info-grid">
+                            <div className="info-item">
+                                <span className="info-label">CIK</span>
+                                <span className="info-value">{stock.cik || 'N/A'}</span>
+                            </div>
+                            <div className="info-item">
+                                <span className="info-label">Currency</span>
+                                <span className="info-value">{stock.currency || 'N/A'}</span>
+                            </div>
+                            <div className="info-item">
+                                <span className="info-label">Country</span>
+                                <span className="info-value">{stock.country || 'N/A'}</span>
+                            </div>
+                            <div className="info-item">
+                                <span className="info-label">Address</span>
+                                <span className="info-value">{stock.address || 'N/A'}</span>
+                            </div>
+                            <div className="info-item">
+                                <span className="info-label">Official Website</span>
+                                <span className="info-value">
+                                    {stock.officialSite ? (
+                                        <a href={stock.officialSite} target="_blank" rel="noopener noreferrer">
+                                            Visit Website
+                                        </a>
+                                    ) : 'N/A'}
+                                </span>
+                            </div>
                         </div>
-                        <div className="metric">
-                            <span className="metric-label">成交量</span>
-                            <span className="metric-value">{(stock.volume / 1000000).toFixed(1)}M</span>
+                    </div>
+
+                    {/* 财务指标 */}
+                    <div className="financial-metrics">
+                        <h4>Financial Metrics</h4>
+                        <div className="metrics-grid">
+                            <div className="metric">
+                                <span className="metric-label">Market Cap</span>
+                                <span className="metric-value">
+                                    {stock.marketCapitalization ?
+                                        `$${(parseFloat(stock.marketCapitalization) / 1000000000).toFixed(1)}B` :
+                                        (stock.marketCap ? `$${(stock.marketCap / 1000000000).toFixed(1)}B` : 'N/A')
+                                    }
+                                </span>
+                            </div>
+                            <div className="metric">
+                                <span className="metric-label">EBITDA</span>
+                                <span className="metric-value">
+                                    {stock.ebitda ?
+                                        `$${(parseFloat(stock.ebitda) / 1000000000).toFixed(1)}B` :
+                                        'N/A'
+                                    }
+                                </span>
+                            </div>
+                            <div className="metric">
+                                <span className="metric-label">PE Ratio</span>
+                                <span className="metric-value">{stock.peRatio || 'N/A'}</span>
+                            </div>
+                            <div className="metric">
+                                <span className="metric-label">PEG Ratio</span>
+                                <span className="metric-value">{stock.pegRatio || 'N/A'}</span>
+                            </div>
+                            <div className="metric">
+                                <span className="metric-label">Book Value</span>
+                                <span className="metric-value">{stock.bookValue ? `$${stock.bookValue}` : 'N/A'}</span>
+                            </div>
+                            <div className="metric">
+                                <span className="metric-label">Volume</span>
+                                <span className="metric-value">{(stock.volume / 1000000).toFixed(1)}M</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 {/* 左下角 - 公司新闻轮播 */}
                 <div className="news-section">
-                    <h3>最新资讯</h3>
+                    <h3>Latest News</h3>
                     <div className="news-carousel">
                         {loadingNews ? (
                             <div className="news-loading">
-                                <p>加载新闻中...</p>
+                                <p>Loading news...</p>
                             </div>
                         ) : currentNews ? (
                             <div className="news-item">
@@ -252,11 +325,11 @@ const StockDetail = () => {
                                     <span className="news-date">{currentNews.date}</span>
                                 </div>
                                 <p className="news-summary">{currentNews.summary}</p>
-                                <span className="news-source">来源: {currentNews.source}</span>
+                                <span className="news-source">Source: {currentNews.source}</span>
                             </div>
                         ) : (
                             <div className="news-empty">
-                                <p>暂无相关新闻</p>
+                                <p>No related news available</p>
                             </div>
                         )}
                         {stockDetail?.news?.length > 0 && (
@@ -285,6 +358,13 @@ const StockDetail = () => {
                     </button>
                 </div>
             </div>
+
+            {/* 购买股票模态框 */}
+            <BuyStockModal
+                isOpen={showBuyModal}
+                onClose={handleCloseBuyModal}
+                symbol={stock?.symbol}
+            />
         </div>
     );
 };

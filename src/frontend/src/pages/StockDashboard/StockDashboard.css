@@ -118,6 +118,33 @@
   box-shadow: 0 0 10px rgba(102, 126, 234, 0.2);
 }
 
+.search-indicator {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #667eea;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  /* 移除可能导致抖动的动画 */
+  opacity: 0.9;
+}
+
+@keyframes pulse-search {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
+}
+
 .clear-search {
   position: absolute;
   right: 10px;
@@ -210,6 +237,10 @@
   margin-left: auto;
   margin-right: auto;
   padding: 0 20px;
+  min-height: 400px;
+  /* 固定最小高度防止抖动 */
+  transition: none;
+  /* 移除可能导致抖动的过渡效果 */
 }
 
 .stock-card {
@@ -217,12 +248,15 @@
   border-radius: 15px;
   padding: 25px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  /* 只保留必要的过渡效果 */
   border-left: 4px solid #667eea;
   cursor: pointer;
   flex: 0 0 320px;
   min-width: 320px;
   max-width: 320px;
+  will-change: transform;
+  /* 优化动画性能 */
 }
 
 .stock-card:hover {
@@ -238,6 +272,13 @@
 
 .stock-header {
   margin-bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.stock-title {
+  flex: 1;
 }
 
 .stock-symbol {
@@ -251,6 +292,60 @@
   color: #666;
   font-size: 0.9rem;
   display: block;
+}
+
+.data-source {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  margin-left: 10px;
+  flex-shrink: 0;
+}
+
+.data-source.external {
+  background-color: #e8f5e8;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+}
+
+.data-source.local {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+}
+
+.stock-exchange {
+  color: #667eea;
+  font-size: 0.85rem;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.external-stock-info {
+  margin-top: 10px;
+}
+
+.external-stock-info .detail-item {
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.external-stock-info .label {
+  font-size: 0.8rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.external-stock-info .value {
+  font-size: 0.8rem;
+  color: #333;
+  font-weight: 600;
 }
 
 .stock-price {

@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
 import { useAsyncData } from '../../hooks'
-import { portfolioApi } from '../../api'
+import { portfolioApi, tradingApi } from '../../api'
 import { useAuth } from '../../hooks'
-import { formatPrice, formatPercentage, getPriceChangeColor, formatDate, getErrorMessage } from '../../utils/formatters'
+import { getErrorMessage } from '../../utils/formatters'
+import { Holdings, Watchlist, TransactionHistory } from './components'
 import './Portfolio.css'
 
 function Portfolio() {
@@ -28,6 +29,26 @@ function Portfolio() {
         return getErrorMessage(err);
       }
     }
+  )
+
+  // 获取交易历史数据
+  const {
+    data: transactionHistory,
+    loading: transactionsLoading,
+    error: transactionsError,
+    refetch: refetchTransactions
+  } = useAsyncData(
+    () => tradingApi.getTransactionHistory({ limit: 100 }),
+    [userId],
+    {
+      immediate: isAuthenticated() && userId && activeTab === 'transactions',
+      onError: (err) => {
+        if (!isAuthenticated()) {
+          return 'Please login first';
+        }
+        return getErrorMessage(err);
+      }
+    }
   );
 
   // 模拟观察列表数据 - 后续需要从API获取
@@ -36,11 +57,13 @@ function Portfolio() {
     { symbol: 'NVDA', name: 'NVIDIA Corp', price: 456.78, change: -8.90, changePercent: -1.91 }
   ]);
 
-  // 模拟交易历史数据 - 后续需要从API获取
-  const [transactions, setTransactions] = useState([
-    { id: 1, symbol: 'AAPL', type: 'BUY', quantity: 10, price: 150.00, date: '2024-01-15', total: 1500.00 },
-    { id: 2, symbol: 'GOOGL', type: 'SELL', quantity: 5, price: 2800.00, date: '2024-01-14', total: 14000.00 }
-  ]);
+  // 处理tab切换，当切换到transactions tab时获取数据  
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    if (tab === 'transactions' && !transactionHistory) {
+      refetchTransactions();
+    }
+  };
 
   if (loading) {
     return (
@@ -63,118 +86,42 @@ function Portfolio() {
     )
   }
 
+  // 处理交易成功后的回调
+  const handleTransactionSuccess = () => {
+    refetch(); // 刷新portfolio数据
+    if (activeTab === 'transactions') {
+      refetchTransactions(); // 如果在交易历史页面，也刷新交易数据
+    }
+  };
+
+  // 计算股票总价值
+  const calculateStocksValue = () => {
+    if (!portfolio?.positions || portfolio.positions.length === 0) {
+      return 0;
+    }
+    return portfolio.positions.reduce((total, position) => {
+      return total + (parseFloat(position.current_value) || 0);
+    }, 0);
+  };
+
+  const stocksValue = calculateStocksValue();
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'holdings':
-        return (
-          <div className="holdings-section">
-            {portfolio?.holdings && portfolio.holdings.length > 0 ? (
-              <div className="holdings-table">
-                <div className="table-header">
-                  <span>Stock Symbol</span>
-                  <span>Quantity</span>
-                  <span>Average Cost</span>
-                  <span>Current Price</span>
-                  <span>Total Value</span>
-                  <span>Gain/Loss</span>
-                </div>
-                {portfolio.holdings.map((holding) => (
-                  <div key={holding.symbol} className="table-row">
-                    <span className="stock-symbol">{holding.symbol}</span>
-                    <span>{holding.quantity}</span>
-                    <span>${formatPrice(holding.averageCost || 0)}</span>
-                    <span>${formatPrice(holding.currentPrice || 0)}</span>
-                    <span>${formatPrice((holding.quantity * holding.currentPrice) || 0)}</span>
-                    <span className={`gain-loss ${(holding.totalGain || 0) >= 0 ? 'positive' : 'negative'}`}>
-                      ${formatPrice(holding.totalGain || 0)}
-                      ({formatPercentage(holding.gainPercent || 0)}%)
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-state">
-                <h3>No Holdings</h3>
-                <p>You haven't purchased any stocks yet</p>
-              </div>
-            )}
-          </div>
-        );
+        return <Holdings portfolio={portfolio} onTransactionSuccess={handleTransactionSuccess} />;
 
       case 'watchlist':
-        return (
-          <div className="watchlist-section">
-            {watchlist.length > 0 ? (
-              <div className="watchlist-table">
-                <div className="table-header">
-                  <span>Stock Symbol</span>
-                  <span>Company Name</span>
-                  <span>Current Price</span>
-                  <span>Change</span>
-                  <span>Action</span>
-                </div>
-                {watchlist.map((stock) => (
-                  <div key={stock.symbol} className="table-row">
-                    <span className="stock-symbol">{stock.symbol}</span>
-                    <span>{stock.name}</span>
-                    <span>${formatPrice(stock.price)}</span>
-                    <span className={stock.change >= 0 ? 'positive' : 'negative'}>
-                      {stock.change >= 0 ? '+' : ''}${formatPrice(Math.abs(stock.change))} 
-                      ({formatPercentage(stock.changePercent)}%)
-                    </span>
-                    <span>
-                      <button 
-                        className="remove-btn"
-                        onClick={() => setWatchlist(prev => prev.filter(s => s.symbol !== stock.symbol))}
-                      >
-                        Remove
-                      </button>
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-state">
-                <h3>Watchlist is Empty</h3>
-                <p>Add stocks to your watchlist from the stock details page</p>
-              </div>
-            )}
-          </div>
-        );
+        return <Watchlist watchlist={watchlist} setWatchlist={setWatchlist} onTransactionSuccess={handleTransactionSuccess} />;
 
       case 'transactions':
         return (
-          <div className="transactions-section">
-            {transactions.length > 0 ? (
-              <div className="transactions-table">
-                <div className="table-header">
-                  <span>Date</span>
-                  <span>Stock Symbol</span>
-                  <span>Action</span>
-                  <span>Quantity</span>
-                  <span>Price</span>
-                  <span>Total Amount</span>
-                </div>
-                {transactions.map((transaction) => (
-                  <div key={transaction.id} className="table-row">
-                    <span>{formatDate(transaction.date)}</span>
-                    <span className="stock-symbol">{transaction.symbol}</span>
-                    <span className={`transaction-type ${transaction.type.toLowerCase()}`}>
-                      {transaction.type === 'BUY' ? 'Buy' : 'Sell'}
-                    </span>
-                    <span>{transaction.quantity}</span>
-                    <span>${formatPrice(transaction.price)}</span>
-                    <span>${formatPrice(transaction.total)}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-state">
-                <h3>No Transaction History</h3>
-                <p>You haven't made any stock transactions yet</p>
-              </div>
-            )}
-          </div>
+          <TransactionHistory 
+            transactionHistory={transactionHistory}
+            transactionsLoading={transactionsLoading}
+            transactionsError={transactionsError}
+            refetchTransactions={refetchTransactions}
+          />
         );
 
       default:
@@ -194,20 +141,20 @@ function Portfolio() {
       <div className="portfolio-summary">
         <div className="summary-card">
           <h3>Total Assets</h3>
-          <p className="summary-value">${portfolio?.totalValue?.toFixed(2) || '0.00'}</p>
+          <p className="summary-value">${portfolio?.total_value ? parseFloat(portfolio.total_value).toFixed(2) : '0.00'}</p>
         </div>
         <div className="summary-card">
           <h3>Cash Balance</h3>
-          <p className="summary-value">${portfolio?.cashBalance?.toFixed(2) || '0.00'}</p>
+          <p className="summary-value">${portfolio?.cash_balance ? parseFloat(portfolio.cash_balance).toFixed(2) : '0.00'}</p>
         </div>
         <div className="summary-card">
           <h3>Stock Value</h3>
-          <p className="summary-value">${portfolio?.stocksValue?.toFixed(2) || '0.00'}</p>
+          <p className="summary-value">${stocksValue.toFixed(2)}</p>
         </div>
         <div className="summary-card">
           <h3>Total Gain</h3>
-          <p className={`summary-value ${(portfolio?.totalGain || 0) >= 0 ? 'positive' : 'negative'}`}>
-            ${portfolio?.totalGain?.toFixed(2) || '0.00'}
+          <p className={`summary-value ${(portfolio?.total_return || 0) >= 0 ? 'positive' : 'negative'}`}>
+            ${portfolio?.total_return ? parseFloat(portfolio.total_return).toFixed(2) : '0.00'}
           </p>
         </div>
       </div>
@@ -216,19 +163,19 @@ function Portfolio() {
         <div className="tab-buttons">
           <button 
             className={`tab-btn ${activeTab === 'holdings' ? 'active' : ''}`}
-            onClick={() => setActiveTab('holdings')}
+            onClick={() => handleTabChange('holdings')}
           >
-            Holdings
+            Positions
           </button>
           <button 
             className={`tab-btn ${activeTab === 'watchlist' ? 'active' : ''}`}
-            onClick={() => setActiveTab('watchlist')}
+            onClick={() => handleTabChange('watchlist')}
           >
             Watchlist
           </button>
           <button 
             className={`tab-btn ${activeTab === 'transactions' ? 'active' : ''}`}
-            onClick={() => setActiveTab('transactions')}
+            onClick={() => handleTabChange('transactions')}
           >
             Transaction History
           </button>
