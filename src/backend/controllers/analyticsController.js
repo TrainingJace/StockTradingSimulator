@@ -3,15 +3,35 @@ const db = require('../database/database');
 // Get portfolio analytics
 exports.getPortfolioAnalytics = async (req, res) => {
   try {
-    // Example: Query total assets, returns, asset distribution, top/worst performers
-    // You should adjust table/column names to match your schema
-    const totalValueResult = await db.query('SELECT SUM(value) AS totalValue FROM portfolio');
-    const totalReturnResult = await db.query('SELECT SUM(return) AS totalReturn FROM portfolio');
-    const returnPercentageResult = await db.query('SELECT SUM(return)/SUM(value)*100 AS returnPercentage FROM portfolio');
-    const assetDistributionResult = await db.query('SELECT symbol, SUM(value) * 100.0 / (SELECT SUM(value) FROM portfolio) AS percent FROM portfolio GROUP BY symbol');
-    const topPerformersResult = await db.query('SELECT symbol, return AS change FROM portfolio ORDER BY return DESC LIMIT 3');
-    const worstPerformersResult = await db.query('SELECT symbol, return AS change FROM portfolio ORDER BY return ASC LIMIT 3');
-    const dailyReturnsResult = await db.query('SELECT date, SUM(value) AS value FROM portfolio_history GROUP BY date ORDER BY date');
+    // ...existing code...
+    const userId = req.user.userId;
+    // 获取该用户所有投资组合ID
+    const portfolioRows = await db.query('SELECT id FROM portfolios WHERE user_id = ?', [userId]);
+    const portfolioIds = portfolioRows.map(row => row.id);
+    if (portfolioIds.length === 0) {
+      return res.json({
+        totalValue: 0,
+        totalReturn: 0,
+        returnPercentage: 0,
+        assetDistribution: [],
+        topPerformers: [],
+        worstPerformers: [],
+        dailyReturns: []
+      });
+    }
+    // 总资产：positions表所有持仓市值之和
+    const totalValueResult = await db.query(`SELECT SUM(shares * avg_cost) AS totalValue FROM positions WHERE portfolio_id IN (${portfolioIds.join(',')})`);
+    // 总收益：portfolios表的total_return之和
+    const totalReturnResult = await db.query(`SELECT SUM(total_return) AS totalReturn FROM portfolios WHERE id IN (${portfolioIds.join(',')})`);
+    // 收益率：portfolios表的平均total_return_percent
+    const returnPercentageResult = await db.query(`SELECT AVG(total_return_percent) AS returnPercentage FROM portfolios WHERE id IN (${portfolioIds.join(',')})`);
+    // 资产分布：positions表各symbol市值占比
+    const assetDistributionResult = await db.query(`SELECT symbol, SUM(shares * avg_cost) AS value FROM positions WHERE portfolio_id IN (${portfolioIds.join(',')}) GROUP BY symbol`);
+    // 表现最好/最差：positions表市值变化（此处用市值排序）
+    const topPerformersResult = await db.query(`SELECT symbol, SUM(shares * avg_cost) AS value FROM positions WHERE portfolio_id IN (${portfolioIds.join(',')}) GROUP BY symbol ORDER BY value DESC LIMIT 3`);
+    const worstPerformersResult = await db.query(`SELECT symbol, SUM(shares * avg_cost) AS value FROM positions WHERE portfolio_id IN (${portfolioIds.join(',')}) GROUP BY symbol ORDER BY value ASC LIMIT 3`);
+    // 每日资产变化：portfolio_history表
+    const dailyReturnsResult = await db.query(`SELECT date, total_value FROM portfolio_history WHERE portfolio_id IN (${portfolioIds.join(',')}) ORDER BY date`);
 
     res.json({
       totalValue: totalValueResult[0]?.totalValue || 0,
@@ -23,7 +43,17 @@ exports.getPortfolioAnalytics = async (req, res) => {
       dailyReturns: dailyReturnsResult
     });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch analytics', details: err.message });
+    res.json({
+      totalValue: '--',
+      totalReturn: '--',
+      returnPercentage: '--',
+      assetDistribution: '--',
+      topPerformers: '--',
+      worstPerformers: '--',
+      dailyReturns: '--',
+      error: 'Failed to fetch analytics',
+      details: err.message
+    });
   }
 };
 

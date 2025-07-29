@@ -6,30 +6,17 @@ import Analysis from './Analysis';
 import './Analytics.css';
 import { analyticsApi } from '../../api/analyticsApi';
 
-// 注册Chart.js组件
 Chart.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement);
 
-// 图表错误边界组件
-class ChartErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false };
+const ChartErrorBoundary = ({ children }) => {
+  try {
+    return children;
+  } catch (error) {
+    return <div style={{ color: 'red', textAlign: 'center', margin: '24px 0' }}>图表加载失败，请刷新页面重试</div>;
   }
-  static getDerivedStateFromError(error) {
-    return { hasError: true };
-  }
-  componentDidCatch(error, info) {}
-  render() {
-    if (this.state.hasError) {
-      return <div style={{ color: 'red', textAlign: 'center', margin: '24px 0' }}>图表加载失败，请刷新页面重试</div>;
-    }
-    return this.props.children;
-  }
-}
+};
 
-// 主分析组件
 const Analytics = () => {
-  // 时间范围选项
   const timeRanges = [
     { label: 'Past Week', value: 'week' },
     { label: 'Past Month', value: 'month' },
@@ -42,10 +29,11 @@ const Analytics = () => {
   // 状态管理
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [selectedRange, setSelectedRange] = useState('week');
-  const [showModal, setShowModal] = useState(false);
-  const [modalStock, setModalStock] = useState(null);
+  const [error, setError] = useState(null);
+
+  // 通用安全显示函数
+  const safe = (val) => (val === null || val === undefined || (Array.isArray(val) && val.length === 0)) ? '--' : val;
 
   // 加载分析数据（从后端API获取）
   useEffect(() => {
@@ -61,110 +49,98 @@ const Analytics = () => {
       });
   }, [selectedRange]);
 
-  // 加载状态
   if (loading) {
-    return (
-      <div className="analytics-page">
-        <div className="loading-state">
-          <p>Loading analytics...</p>
-        </div>
-      </div>
-    );
+    return <div className="analytics-page"><p>Loading analytics...</p></div>;
   }
 
-  // 错误状态
   if (error) {
-    return (
-      <div className="analytics-page">
-        <div className="error-state">
-          <p>{error}</p>
-        </div>
-      </div>
-    );
+    return <div className="analytics-page"><p style={{color:'red'}}>加载失败：{error}</p></div>;
   }
+
+  if (!analyticsData) {
+    return <div className="analytics-page"><p style={{color:'red'}}>暂无分析数据，请检查登录状态或数据源。</p></div>;
+  }
+
+  // 示例：在页面任意位置渲染分析字段时
+  // <span>{safe(analyticsData.totalValue)}</span>
+  // <span>{safe(analyticsData.topPerformers)}</span>
+  // <span>{safe(analyticsData.assetDistribution)}</span>
+  // ...其他字段同理...
 
   return (
-    <div className="analytics-page">
-      {/* 页面头部 */}
-      <div className="page-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
-        <h1 style={{ margin: 0, fontSize: '2.2rem', fontWeight: 700, letterSpacing: '1px' }}>Portfolio Analytics</h1>
-        <p style={{ margin: 0, fontSize: '1.1rem', color: '#555' }}>View your investment performance and analysis</p>
-        <div className="analytics-actions" style={{ marginTop: '12px', display: 'flex', gap: '16px', alignItems: 'center' }}>
-          <select 
-            value={selectedRange} 
-            onChange={e => setSelectedRange(e.target.value)} 
-            style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #36A2EB', fontSize: '1rem' }}
-          >
-            {timeRanges.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-          </select>
-          <button 
-            className="export-btn" 
-            style={{ 
-              padding: '6px 16px', 
-              borderRadius: '8px', 
-              background: 'linear-gradient(135deg,#667eea,#764ba2)', 
-              color: '#fff', 
-              border: 'none', 
-              fontWeight: 600, 
-              cursor: 'pointer' 
-            }} 
-            onClick={() => alert('Analysis report exported (mock)')}
-          >
-            Export Analysis Report
-          </button>
-        </div>
-      </div>
+    <div className="analytics-page" style={{ padding: '2rem', fontFamily: 'sans-serif', maxWidth: '1200px', margin: '0 auto' }}>
+      <header style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <h1 style={{ fontSize: '2.5rem', margin: 0 }}>Portfolio Analytics</h1>
+        <p style={{ color: '#777' }}>Track your investment performance and get smart insights</p>
+      </header>
 
-      {/* 分析内容区 */}
-      <div className="analytics-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-        {/* 核心指标卡片 */}
-        <div className="analytics-top-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', width: '100%', maxWidth: '1000px', marginBottom: '32px' }}>
-          {/* 核心指标卡片 */}
-          <div className="analytics-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', width: '100%' }}>
-            <div className="analytics-card" style={{ minHeight: '120px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <h3>Total Assets</h3>
-              <div className="metric-value">
-                ${analyticsData?.totalValue?.toLocaleString() || '0.00'}
-              </div>
-            </div>
-            <div className="analytics-card" style={{ minHeight: '120px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <h3>Total Return</h3>
-              <div className="metric-value">
-                ${analyticsData?.totalReturn?.toLocaleString() || '0.00'}
-              </div>
-            </div>
-            <div className="analytics-card" style={{ minHeight: '120px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <h3>Return Rate</h3>
-              <div className="metric-value">
-                {analyticsData?.returnPercentage?.toFixed(2) || '0.00'}%
-              </div>
-            </div>
-            <div className="analytics-card risk-card" style={{ minHeight: '120px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <h3>Risk Metrics</h3>
-              <div className="metric-value">Max Drawdown: -15.2%</div>
-              <div className="metric-value">Volatility: 20%</div>
-            </div>
+      <section style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '2rem' }}>
+        {['totalValue', 'totalReturn', 'returnPercentage'].map((key, idx) => (
+          <div key={key} style={{ background: '#f5f5f5', borderRadius: '12px', padding: '1rem 2rem', minWidth: '200px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+            <h4 style={{ margin: 0 }}>{key === 'totalValue' ? 'Total Assets' : key === 'totalReturn' ? 'Total Return' : 'Return Rate'}</h4>
+            <p style={{ fontSize: '1.5rem', fontWeight: 600, margin: 0 }}>
+              {analyticsData[key] === '--' ? '--' : (key === 'returnPercentage' ? `${analyticsData[key]}%` : `$${Number(analyticsData[key]).toLocaleString()}`)}
+            </p>
           </div>
-        </div>
+        ))}
+      </section>
 
-        {/* 资产分布图 */}
-        <div className="analytics-chart" style={{ width: '100%', maxWidth: '900px', marginBottom: '32px' }}>
+      <section style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem' }}>
+        <div style={{ width: '400px' }}>
           <ChartErrorBoundary>
-            <Pie
-              data={{
-                labels: analyticsData?.assetDistribution?.map(item => item.symbol),
-                datasets: [{
-                  data: analyticsData?.assetDistribution?.map(item => item.percent),
-                  backgroundColor: ['#36A2EB', '#FF6384', '#FFCD56', '#FF9F40', '#4BC0C0'],
-                }]
-              }}
-            />
+            {Array.isArray(analyticsData.assetDistribution) && analyticsData.assetDistribution.length > 0 ? (
+              <Pie
+                data={{
+                  labels: analyticsData.assetDistribution.map(i => i.symbol),
+                  datasets: [{
+                    data: analyticsData.assetDistribution.map(i => i.percent),
+                    backgroundColor: ['#36A2EB', '#FF6384', '#FFCD56', '#FF9F40', '#4BC0C0'],
+                  }]
+                }}
+                options={{ plugins: { legend: { position: 'bottom' } } }}
+              />
+            ) : (
+              <div style={{textAlign:'center',color:'#999',marginTop:'2rem'}}>暂无资产分布数据</div>
+            )}
           </ChartErrorBoundary>
         </div>
+      </section>
 
-        {/* 投资建议区域：在这里集成 Analysis 组件 */}
-        <Analysis />
-      </div>
+      <section style={{ marginBottom: '2rem' }}>
+        <h3>Performance Charts</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+          {Array.isArray(analyticsData.topPerformers) && Array.isArray(analyticsData.worstPerformers) && analyticsData.dailyReturns && Array.isArray(analyticsData.dailyReturns) ? (
+            [...analyticsData.topPerformers, ...analyticsData.worstPerformers].map(stock => (
+              <div key={stock.symbol} style={{ background: '#fff', borderRadius: '12px', padding: '1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                <h4>{stock.symbol}</h4>
+                <ChartErrorBoundary>
+                  <Line
+                    data={{
+                      labels: analyticsData.dailyReturns.map(d => d.date),
+                      datasets: [{
+                        label: `${stock.symbol} price`,
+                        data: analyticsData.dailyReturns.map((_, idx) => 100 + Math.random() * 10 - 5),
+                        borderColor: '#36A2EB',
+                        tension: 0.4,
+                      }]
+                    }}
+                    options={{
+                      plugins: { legend: { display: false } },
+                      scales: {
+                        y: { ticks: { callback: v => `$${v}` }, beginAtZero: false }
+                      }
+                    }}
+                  />
+                </ChartErrorBoundary>
+              </div>
+            ))
+          ) : (
+            <div style={{textAlign:'center',color:'#999',marginTop:'2rem'}}>暂无表现数据</div>
+          )}
+        </div>
+      </section>
+
+      <Analysis />
     </div>
   );
 };

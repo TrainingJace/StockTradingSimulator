@@ -83,12 +83,25 @@ const Analysis = () => {
   const [loading, setLoading] = useState(true);
   const [rawResponse, setRawResponse] = useState('');
   const [error, setError] = useState(null);
+  const [progress, setProgress] = useState(0); // 新增进度条状态
 
   // 调用豆包API，发送 prompt（基于结构化数据）
   const fetchStockAnalysis = async () => {
     try {
       setLoading(true);
       setError(null);
+      setProgress(0);
+
+      // 进度条模拟：10秒内从0到100
+      const interval = setInterval(() => {
+        setProgress(prev => {
+          if (prev >= 100) {
+            clearInterval(interval);
+            return 100;
+          }
+          return prev + 1;
+        });
+      }, 320); // 100ms增加1%，10秒跑满
 
       const promptText = generatePromptFromData(analyticsMockData);
 
@@ -110,6 +123,7 @@ const Analysis = () => {
       });
 
       if (!response.ok) {
+        clearInterval(interval);
         throw new Error(`API请求失败: ${response.status}`);
       }
 
@@ -118,9 +132,12 @@ const Analysis = () => {
       setRawResponse(content);
       setAnalysis(formatAnalysis(content));
       setLoading(false);
+      clearInterval(interval);
+      setProgress(100);
     } catch (err) {
       setError(`获取分析失败：${err.message}`);
       setLoading(false);
+      setProgress(0);
     }
   };
 
@@ -130,10 +147,18 @@ const Analysis = () => {
 
   if (loading) {
     return (
-      <div className="analytics-page">
-        <div className="loading-state">
-          <p>正在生成智能分析报告,大约需要8-10秒..</p>
+      <div className="analytics-page" style={{padding: '20px', textAlign: 'center'}}>
+        <p>正在生成智能分析报告,大约需要10秒,加载中...</p>
+        <div style={{width: '80%', margin: '20px auto', background: '#eee', borderRadius: '8px', height: '20px', overflow: 'hidden'}}>
+          <div style={{
+            width: `${progress}%`,
+            height: '100%',
+            backgroundColor: '#36A2EB',
+            borderRadius: '8px',
+            transition: 'width 0.1s linear'
+          }} />
         </div>
+        <p>{progress}%</p>
       </div>
     );
   }
@@ -162,7 +187,7 @@ const Analysis = () => {
       {/* 分段展示分析 */}
       <div className="analysis-content">
         {analysis?.sections?.map((section, index) => (
-          <div key={index} className="analysis-section">
+          <div key={index} className="analysis-section" style={{ marginBottom: '1.5rem' }}>
             <h2>{section.title}</h2>
             <p>{section.content}</p>
           </div>

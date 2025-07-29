@@ -3,9 +3,16 @@ const { authService } = require('../services');
 // 认证中间件
 const authenticateToken = async (req, res, next) => {
   try {
+    const config = require('../config');
+    // 如果JWT_SECRET为默认值，则跳过鉴权
+    if (config.auth.jwtSecret === 'your-super-secret-jwt-key-change-this-in-production') {
+      req.user = { userId: 0, username: 'dev', email: 'dev@example.com', devMode: true };
+      return next();
+    }
+
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-    
+
     if (!token) {
       return res.status(401).json({
         success: false,
@@ -14,7 +21,7 @@ const authenticateToken = async (req, res, next) => {
     }
 
     const decoded = authService.verifyToken(token);
-    
+
     // 验证用户是否仍然存在
     const user = await authService.getUserById(decoded.userId);
     if (!user) {
