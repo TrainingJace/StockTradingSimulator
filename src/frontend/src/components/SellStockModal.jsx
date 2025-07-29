@@ -90,69 +90,59 @@ const SellStockModal = ({ isOpen, onClose, stock, holdings, onSellSuccess }) => 
         </div>
 
         <div className="modal-content">
-          <div className="stock-info">
-            <div className="stock-name">{stock?.name || stock?.symbol}</div>
-            <div className="stock-price">
-              Current Price: ${formatPrice(stock?.price)}
+          <div className="modal-body">
+            <div className="stock-info">
+              <div className="stock-name">{stock?.name || stock?.symbol}</div>
+              <div className="stock-price">
+                Current Price: ${formatPrice(stock?.price)}
+              </div>
+              <div className="current-holding">
+                Current Holdings: {maxShares} shares
+              </div>
             </div>
-            <div className="current-holding">
-              Current Holdings: {maxShares} shares
+            <div className="order-section">
+              <div className="form-group">
+                <label htmlFor="shares">Number of Shares to Sell:</label>
+                <input
+                  type="number"
+                  id="shares"
+                  value={shares}
+                  onChange={(e) => setShares(e.target.value)}
+                  placeholder="Enter shares"
+                  min="1"
+                  max={maxShares}
+                  step="1"
+                  disabled={isLoading}
+                />
+                <div className="max-shares">
+                  Maximum: {maxShares} shares
+                </div>
+              </div>
+              <div className="transaction-summary">
+                <div className="summary-row">
+                  <span>Shares to Sell:</span>
+                  <span>{shares || '0'}</span>
+                </div>
+                <div className="summary-row">
+                  <span>Price per Share:</span>
+                  <span>${formatPrice(stock?.price)}</span>
+                </div>
+                <div className="summary-row total">
+                  <span>Estimated Total:</span>
+                  <span>${estimatedTotal}</span>
+                </div>
+              </div>
             </div>
           </div>
-
-          <div className="sell-form">
-            <div className="form-group">
-              <label htmlFor="shares">Number of Shares to Sell:</label>
-              <input
-                type="number"
-                id="shares"
-                value={shares}
-                onChange={(e) => setShares(e.target.value)}
-                placeholder="Enter shares"
-                min="1"
-                max={maxShares}
-                step="1"
-                disabled={isLoading}
-              />
-              <div className="max-shares">
-                Maximum: {maxShares} shares
-              </div>
-            </div>
-
-            <div className="transaction-summary">
-              <div className="summary-row">
-                <span>Shares to Sell:</span>
-                <span>{shares || '0'}</span>
-              </div>
-              <div className="summary-row">
-                <span>Price per Share:</span>
-                <span>${formatPrice(stock?.price)}</span>
-              </div>
-              <div className="summary-row total">
-                <span>Estimated Total:</span>
-                <span>${estimatedTotal}</span>
-              </div>
-            </div>
-
-            {error && <div className="error-message">{error}</div>}
-
-            <div className="modal-actions">
-              <button 
-                className="cancel-btn" 
-                onClick={onClose}
-                disabled={isLoading}
-              >
-                Cancel
-              </button>
-              <button 
-                className="sell-btn" 
-                onClick={handleSellStock}
-                disabled={isLoading || !shares || parseInt(shares) <= 0 || parseInt(shares) > maxShares}
-              >
-                {isLoading ? 'Selling...' : 'Sell Stock'}
-              </button>
-            </div>
-          </div>
+          {error && <div className="error-message">{error}</div>}
+          <button 
+            className="sell-btn" 
+            onClick={handleSellStock}
+            disabled={isLoading || !shares || parseInt(shares) <= 0 || parseInt(shares) > maxShares}
+            style={{ marginTop: '20px', width: '100%' }}
+          >
+            {isLoading ? 'Selling...' : 'Sell Stock'}
+          </button>
         </div>
       </div>
     </div>

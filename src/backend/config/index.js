@@ -51,7 +51,7 @@ const config = {
     jwtSecret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production',
     tokenExpiry: process.env.JWT_EXPIRY || '24h',
     bcryptRounds: 10,
-    simulation_date: process.env.DEFAULT_SIMULATION_DATE || '2023-01-01' // 默认模拟日期
+    simulation_date: '2023-01-03' // 默认模拟日期
   },
 
   // 缓存配置

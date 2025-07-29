@@ -168,22 +168,24 @@
   box-shadow: none !important;
 }
 
-.buy-btn {
+.action-buy-btn {
+  width: 50% ;
   background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
   color: white;
 }
 
-.buy-btn:hover:not(:disabled) {
+.action-buy-btn:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
 }
 
-.sell-btn {
+.action-sell-btn {
+  width: 50% ;
   background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
   color: white;
 }
 
-.sell-btn:hover:not(:disabled) {
+.action-sell-btn:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
 }
