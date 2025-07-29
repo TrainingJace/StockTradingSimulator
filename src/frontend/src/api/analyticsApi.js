@@ -13,5 +13,8 @@ export const analyticsApi = {
   },
   async getBenchmarkComparison(params = {}) {
     return await apiClient.get('/analytics/benchmark', params);
+  },
+  async dailySettle() {
+    return await apiClient.post('/analytics/daily-settle');
   }
 };

@@ -3,9 +3,11 @@ const analyticsController = require('../controllers/analyticsController');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
-
-// All analytics routes require authentication
+// 所有analytics路由都需要鉴权
 router.use(authenticateToken);
+
+// Daily settlement API
+router.post('/daily-settle', analyticsController.dailySettle);
 
 // Portfolio analytics (for frontend integration)
 router.get('/portfolio', analyticsController.getPortfolioAnalytics);
