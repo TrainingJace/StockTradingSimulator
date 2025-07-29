@@ -47,6 +47,7 @@ function Holdings({ portfolio, onTransactionSuccess }) {
               <span>Average Cost</span>
               <span>Current Price</span>
               <span>Total Value</span>
+              <span>Daily Return</span>
               <span>Gain/Loss</span>
               <span>Actions</span>
             </div>
@@ -57,6 +58,9 @@ function Holdings({ portfolio, onTransactionSuccess }) {
                 <span>${formatPrice(parseFloat(position.avg_cost) || 0)}</span>
                 <span>${formatPrice(parseFloat(position.current_price) || 0)}</span>
                 <span>${formatPrice(parseFloat(position.current_value) || 0)}</span>
+                <span className={`daily-return ${(parseFloat(position.daily_return) || 0) >= 0 ? 'positive' : 'negative'}`}>
+                  ${formatPrice(parseFloat(position.daily_return) || 0)}
+                </span>
                 <span className={`gain-loss ${(parseFloat(position.unrealized_gain) || 0) >= 0 ? 'positive' : 'negative'}`}>
                   ${formatPrice(parseFloat(position.unrealized_gain) || 0)}
                   ({formatPercentage(parseFloat(position.unrealized_gain_percent) || 0)})

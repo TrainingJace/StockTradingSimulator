@@ -42,9 +42,28 @@ class PortfolioService {
       const latestPortfolioArr = await this.db.execute(portfolioQuery, [userId]);
       const latestPortfolio = latestPortfolioArr[0];
       const latestPositions = await this.db.execute(positionsQuery, [latestPortfolio.id]);
+
+      // 计算每个position的daily_return
+      const stockService = require('./stockService');
+      const simulationDate = await this.authService.getSimulationDate(userId);
+      const positionsWithDailyReturn = await Promise.all(
+        (latestPositions || []).map(async (pos) => {
+          const prevPriceRaw = await stockService.getPreviousPrice(pos.symbol, simulationDate);
+          const prevPrice = prevPriceRaw !== null && prevPriceRaw !== undefined ? parseFloat(prevPriceRaw) : null;
+          const currentPrice = pos.current_price !== undefined && pos.current_price !== null ? parseFloat(pos.current_price) : null;
+          let dailyReturn = null;
+          if (prevPrice !== null && currentPrice !== null) {
+            dailyReturn = (currentPrice - prevPrice) * pos.shares;
+          }
+          return {
+            ...pos,
+            daily_return: dailyReturn
+          };
+        })
+      );
       return {
         ...latestPortfolio,
-        positions: latestPositions || []
+        positions: positionsWithDailyReturn
       };
     } catch (error) {
       console.error('Error getting portfolio:', error);

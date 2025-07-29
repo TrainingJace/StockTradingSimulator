@@ -2,6 +2,20 @@
 const axios = require('axios');
 
 class StockService {
+  // 获取某只股票在指定日期的前一交易日收盘价
+  async getPreviousPrice(symbol, currentDate) {
+    const query = `
+      SELECT close_price, date FROM stock_history
+      WHERE symbol = ? AND date < ?
+      ORDER BY date DESC
+      LIMIT 1
+    `;
+    const result = await this.db.execute(query, [symbol, currentDate]);
+    if (result && result.length > 0) {
+      return result[0].close_price;
+    }
+    return null;
+  }
   constructor() {
     this.db = require('../database/database');
 
@@ -34,28 +48,15 @@ class StockService {
         if (historyResult.length > 0) {
           const historyData = historyResult[0];
 
-          // 查找前一个交易日的价格来计算变化
-          const previousDayQuery = `
-            SELECT close_price, date
-            FROM stock_history 
-            WHERE symbol = ? AND date < ?
-            ORDER BY date DESC 
-            LIMIT 1
-          `;
-
-          const previousDayResult = await this.db.execute(previousDayQuery, [symbol, dateOnly]);
-          console.log(`Previous day data for ${symbol}:`, previousDayResult[0] ? `${previousDayResult[0].date}: $${previousDayResult[0].close_price}` : 'not found');
-
+          // 用 getPreviousPrice 方法获取前一交易日价格
+          const previousPriceRaw = await this.getPreviousPrice(symbol, dateOnly);
           let changeAmount = 0;
           let changePercent = 0;
-
-          if (previousDayResult.length > 0) {
-            const previousPrice = parseFloat(previousDayResult[0].close_price);
+          if (previousPriceRaw !== null && previousPriceRaw !== undefined) {
+            const previousPrice = parseFloat(previousPriceRaw);
             const currentPrice = parseFloat(historyData.close_price);
-
             changeAmount = currentPrice - previousPrice;
             changePercent = previousPrice > 0 ? (changeAmount / previousPrice) * 100 : 0;
-
             console.log(`Price change for ${symbol}: $${changeAmount.toFixed(2)} (${changePercent.toFixed(2)}%)`);
           }
 
@@ -67,7 +68,6 @@ class StockService {
             last_updated: historyData.date,
             change: parseFloat(changeAmount.toFixed(2)),
             changePercent: parseFloat(changePercent.toFixed(2))
-
           };
         } else {
           // 如果没有找到该日期的历史数据，先留白处理
