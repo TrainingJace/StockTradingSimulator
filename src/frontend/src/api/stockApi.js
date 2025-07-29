@@ -76,6 +76,42 @@ export const stockApi = {
     return response; // 返回完整响应
   },
 
+  // 使用 Twelve Data API 搜索股票
+  async searchStocksBySymbol(symbol) {
+    try {
+      const apiKey = '7a2f00f6984b4c24a36501313ffd15e0';
+      const url = `https://api.twelvedata.com/symbol_search?symbol=${encodeURIComponent(symbol)}&apikey=${apiKey}`;
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.status !== 'ok') {
+        throw new Error(data.message || 'Search failed');
+      }
+
+      return {
+        success: true,
+        data: data.data
+      };
+    } catch (error) {
+      console.error('Error searching stocks:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  },
+
   // 获取市场状态
   async getMarketStatus() {
     const response = await apiClient.get('/stocks/market/status');
