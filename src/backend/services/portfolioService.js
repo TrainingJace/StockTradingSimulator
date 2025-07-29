@@ -25,10 +25,10 @@ class PortfolioService {
       if (positions && positions.length > 0) {
         const stockService = require('./stockService');
         const symbols = positions.map(pos => pos.symbol);
-        const simulationDate = await this.authService.getSimulationDate(userId);
+        // const simulationDate = await this.authService.getSimulationDate(userId);
         const stockPrices = {};
         for (const symbol of symbols) {
-          const stockData = await stockService.getStockPrice(symbol, simulationDate);
+          const stockData = await stockService.getStockPrice(symbol, null);
           if (stockData) {
             stockPrices[symbol] = stockData.price;
           }
@@ -45,22 +45,35 @@ class PortfolioService {
 
       // 计算每个position的daily_return
       const stockService = require('./stockService');
-      const simulationDate = await this.authService.getSimulationDate(userId);
       const positionsWithDailyReturn = await Promise.all(
-        (latestPositions || []).map(async (pos) => {
-          const prevPriceRaw = await stockService.getPreviousPrice(pos.symbol, simulationDate);
-          const prevPrice = prevPriceRaw !== null && prevPriceRaw !== undefined ? parseFloat(prevPriceRaw) : null;
-          const currentPrice = pos.current_price !== undefined && pos.current_price !== null ? parseFloat(pos.current_price) : null;
-          let dailyReturn = null;
-          if (prevPrice !== null && currentPrice !== null) {
-            dailyReturn = (currentPrice - prevPrice) * pos.shares;
-          }
+        latestPositions.map(async (pos) => {
+          const  price = await stockService.getRealTimePrice(pos.symbol, null);
+          const currentPrice = price ? parseFloat(price.price) : null;
+          let dailyReturn = parseFloat(price.change_price);
+         
           return {
             ...pos,
-            daily_return: dailyReturn
+            daily_return: dailyReturn,
           };
         })
-      );
+      );  
+
+      // const simulationDate = await this.authService.getSimulationDate(userId);
+      // const positionsWithDailyReturn = await Promise.all(
+      //   (latestPositions || []).map(async (pos) => {
+      //     const prevPriceRaw = await stockService.getPreviousPrice(pos.symbol, simulationDate);
+      //     const prevPrice = prevPriceRaw !== null && prevPriceRaw !== undefined ? parseFloat(prevPriceRaw) : null;
+      //     const currentPrice = pos.current_price !== undefined && pos.current_price !== null ? parseFloat(pos.current_price) : null;
+      //     let dailyReturn = null;
+      //     if (prevPrice !== null && currentPrice !== null) {
+      //       dailyReturn = (currentPrice - prevPrice) * pos.shares;
+      //     }
+      //     return {
+      //       ...pos,
+      //       daily_return: dailyReturn
+      //     };
+      //   })
+      // );
       return {
         ...latestPortfolio,
         positions: positionsWithDailyReturn
@@ -130,7 +143,8 @@ class PortfolioService {
       const totalReturnPercent = initialBalance > 0 ? ((newTotalValue - initialBalance) / initialBalance) * 100 : 0;
 
       // 获取用户的模拟日期
-      const simulationDate = await this.authService.getSimulationDate(userId);
+      // const simulationDate = await this.authService.getSimulationDate(userId);
+      const simulationDate = new Date().toISOString().split('T')[0]; // 返回当前日期
 
       // 更新投资组合
       await this.db.execute(
@@ -173,7 +187,8 @@ class PortfolioService {
       );
 
       // 获取用户的模拟日期
-      const simulationDate = await this.authService.getSimulationDate(userId);
+      // const simulationDate = await this.authService.getSimulationDate(userId);
+      const simulationDate = new Date().toISOString().split('T')[0]; // 返回当前日期
 
       // 更新每个持仓的价格
       for (const position of positions) {

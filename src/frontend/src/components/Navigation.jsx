@@ -94,7 +94,7 @@ function Navigation() {
         <div className="nav-auth">
           {isAuthenticated() ? (
             <div className="user-menu">
-              <div className="simulation-date">
+              {/* <div className="simulation-date">
                 <span className="date-label">Simulation Date:</span>
                 <span className="date-value">{formatDate(user?.simulation_date)}</span>
                 <button 
@@ -104,7 +104,7 @@ function Navigation() {
                 >
                   ⏭
                 </button>
-              </div>
+              </div> */}
               <span className="user-greeting">👋 {user.username}</span>
               <button onClick={handleLogout} className="logout-btn">
                 Logout

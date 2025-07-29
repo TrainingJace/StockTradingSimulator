@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const config = require('../config');
+const tradingService = require('./tradingService');
 
 class AuthService {
   constructor() {
@@ -49,6 +50,9 @@ class AuthService {
   // ========== 模拟日期管理 ==========
 
   async getSimulationDate(userId) {
+    // return current date
+    return new Date().toISOString().split('T')[0]; // 返回当前日期，格式为 YYYY-MM-DD
+
     try {
       const query = 'SELECT simulation_date FROM users WHERE id = ?';
       const result = await this.db.execute(query, [userId]);
@@ -114,7 +118,13 @@ class AuthService {
 
       // 创建用户的初始投资组合
       const portfolioService = require('./portfolioService');
-      await portfolioService.createPortfolio(userId, 10000);
+      await portfolioService.createPortfolio(userId, 50000);
+      await tradingService.executeBuyOrder(userId, 'AAPL', 10, 200, '2025-07-23'); // 示例：购买10股AAPL股票
+      await tradingService.executeSellOrder(userId, 'AAPL', 5, 220, '2025-07-24'); // 示例：卖出5股AAPL股票
+      await tradingService.executeBuyOrder(userId, 'AAPL', 3, 210, '2025-07-26'); // 示例：购买3股AAPL股票
+      await tradingService.executeBuyOrder(userId, 'GOOGL', 5, 180, '2025-07-25'); // 示例：购买5股GOOGL股票
+      await tradingService.executeSellOrder(userId, 'GOOGL', 2, 170, '2025-07-26'); // 示例：卖出2股GOOGL股票
+      await tradingService.executeBuyOrder(userId, 'GOOGL', 3, 175, '2025-07-27'); // 示例：购买8股MSFT股票
 
       // 返回创建的用户（不包含密码）
       const newUser = await this.getUserById(userId);

@@ -16,12 +16,23 @@ class StockService {
     }
     return null;
   }
+
+  
   constructor() {
     this.db = require('../database/database');
-
+    this.API_KEY = process.env.STOCK_API_KEY;
+    this.BASE_URL = 'https://api.twelvedata.com';
+    
+    // // 设置定期清理缓存（每小时执行一次）
+    // setInterval(() => {
+    //   this.cleanupCache();
+    // }, 60 * 60 * 1000); // 1小时
+    
+    console.log('StockService initialized with caching enabled');
   }
 
   async getStockPrice(symbol, simulationDate = null) {
+    return this.getRealTimePrice(symbol, null);
     try {
       // 先获取基本股票信息
       const query = 'SELECT * FROM stocks WHERE symbol = ?';
@@ -85,24 +96,31 @@ class StockService {
   }
 
   async getMultipleStocks(symbols = [], simulationDate = null) {
-    console.log(`Getting multiple stocks:`, symbols, simulationDate ? `on ${simulationDate}` : '');
     try {
       if (symbols.length === 0) {
         // 如果没有指定股票，返回所有股票
         const query = 'SELECT * FROM stocks ORDER BY symbol';
         const result = await this.db.execute(query);
 
-        if (simulationDate) {
-          // 为每个股票获取历史价格
+        // if (simulationDate) {
+        // console.log('Fetching historical prices for all stocks');
+        //   // 为每个股票获取历史价格
+        //   return await Promise.all(
+        //     result.map(async (stock) => {
+        //       const stockWithPrice = await this.getStockPrice(stock.symbol, simulationDate);
+        //       return stockWithPrice || this.formatStockData(stock);
+        //     })
+        //   );
+        // } else {
+          console.log('Fetching real prices for all stocks');
           return await Promise.all(
             result.map(async (stock) => {
-              const stockWithPrice = await this.getStockPrice(stock.symbol, simulationDate);
-              return stockWithPrice || this.formatStockData(stock);
+              const realtimePrice = await this.getRealTimePrice(stock.symbol);
+              return realtimePrice || this.formatStockData(stock);
             })
           );
-        } else {
-          return result.map(this.formatStockData);
-        }
+        // }
+        
       } else {
         // 获取指定的股票
         const placeholders = symbols.map(() => '?').join(',');
@@ -118,12 +136,144 @@ class StockService {
             })
           );
         } else {
-          return result.map(this.formatStockData);
+          // 为指定股票获取实时价格
+          return await Promise.all(
+            result.map(async (stock) => {
+              const realtimePrice = await this.getRealTimePrice(stock.symbol);
+              return realtimePrice || this.formatStockData(stock);
+            })
+          );
         }
       }
     } catch (error) {
       console.error('Error getting multiple stocks:', error);
       return [];
+    }
+  }
+
+
+  async getRealTimePrice(symbol) {
+    try {
+      // 获取昨天的日期（YYYY-MM-DD格式） in local time
+
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+      // 首先检查缓存中是否有昨天的数据
+      const cacheQuery = `
+        SELECT * FROM stock_real_history 
+        WHERE symbol = ? 
+          AND price_time = ?
+        ORDER BY price_time DESC 
+        LIMIT 1
+      `;
+
+      const cachedResult = await this.db.execute(cacheQuery, [symbol, yesterdayStr]);
+      if (cachedResult && cachedResult.length > 0) {
+        console.log(`Using cached data for ${symbol} from ${cachedResult[0].price_time}`);
+
+        const cachedData = cachedResult[0];
+        
+        // 计算涨跌幅（与开盘价比较）
+        const change = parseFloat(cachedData.change_price);
+        const changePercent = parseFloat(cachedData.change_percent); ;
+        return {
+          symbol: symbol,
+          price: parseFloat(cachedData.close_price),
+          open: parseFloat(cachedData.open_price),
+          high: parseFloat(cachedData.high_price),
+          low: parseFloat(cachedData.low_price),
+          change: parseFloat(change.toFixed(2)),
+          changePercent: parseFloat(changePercent.toFixed(2)),
+          volume: parseInt(cachedData.volume),
+          last_updated: cachedData.price_time
+        };
+      }
+
+      // 如果缓存中没有数据或数据过期，则调用API
+      console.log(`Cached data length for ${symbol}:`, cachedResult.length);
+      // console.log(`Fetching fresh data from API for ${symbol}`);
+      const response = await axios.get(`${this.BASE_URL}/time_series`, {
+        params: {
+          symbol: symbol,
+          interval: '1day',
+          apikey: this.API_KEY,
+          outputsize: 2,
+          timezone: "utc"
+        }
+      });
+
+
+      if (response.data && response.data.values && response.data.values.length > 0) {
+        console.log(`Fetching data for ${symbol} from API`);
+        const latestData = response.data.values[0];
+        const previousData = response.data.values[1];
+        
+        const priceData = {
+          symbol: symbol,
+          price: parseFloat(latestData.close),
+          open: parseFloat(latestData.open),
+          high: parseFloat(latestData.high),
+          low: parseFloat(latestData.low),
+          change: parseFloat(latestData.close) - parseFloat(previousData.close),
+          changePercent: ((parseFloat(latestData.close) - parseFloat(previousData.close)) / parseFloat(previousData.close)) * 100,
+          volume: parseInt(latestData.volume),
+          last_updated: latestData.datetime
+        };
+
+        // 将新数据保存到缓存表
+        try {
+          // 只存储日期部分，不包含时间
+          const dateOnly = new Date(latestData.datetime).toISOString().split('T')[0];
+          
+          // 先检查是否已经存在该股票该日期的数据
+          const existQuery = `
+            SELECT id FROM stock_real_history 
+            WHERE symbol = ? AND price_time = ?
+            LIMIT 1
+          `;
+          const existResult = await this.db.execute(existQuery, [symbol, dateOnly]);
+          
+          if (existResult && existResult.length > 0) {
+            console.log(`Data already exists for ${symbol} at ${dateOnly}, skipping cache`);
+          } else {
+            const insertQuery = `
+              INSERT INTO stock_real_history 
+              (symbol, price_time, open_price, high_price, low_price, close_price, volume, change_price, change_percent)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `;
+            
+            await this.db.execute(insertQuery, [
+              symbol,
+              dateOnly,
+              latestData.open,
+              latestData.high,
+              latestData.low,
+              latestData.close,
+              latestData.volume,
+              priceData.change,
+              priceData.changePercent
+            ]);
+            
+            console.log(`Cached new data for ${symbol} at ${dateOnly}`);
+          }
+        } catch (cacheError) {
+          console.error(`Failed to cache data for ${symbol}:`, cacheError);
+          // 继续执行，不因为缓存失败而中断
+        }
+
+        return priceData;
+      } else {
+        // 检查是否有错误信息
+        if (response.data && response.data.status) {
+          console.error(`API Error for ${symbol}:`, response.data.status, response.data.message || '');
+        }
+        throw new Error(`Invalid response from time_series API for ${symbol}`);
+      }
+    } catch (error) {
+      console.error(`Error getting real-time price for ${symbol}:`, error);
+      return null;
     }
   }
 

@@ -4,7 +4,7 @@
  */
 
 // 测试股票数据
-const testStocks = [
+let testStocks = [
   {
     symbol: 'AAPL',
     name: 'Apple Inc.',
@@ -158,14 +158,15 @@ const testStocks = [
 async function insertTestStocks(database) {
   try {
     console.log('📋 Inserting test stock data...');
-
+    // 仅插入前三个测试股票
+    testStocks = testStocks.slice(0, 3);
     // 检查是否已经有股票数据
     const existingStocks = await database.execute('SELECT COUNT(*) as count FROM stocks');
     if (existingStocks[0].count > 0) {
       console.log('📋 Test stocks already exist, skipping...');
 
       // 即使股票数据已存在，也要检查历史数据
-      await initializeStockHistory(database);
+      // await initializeStockHistory(database);
       return;
     }
 
@@ -202,7 +203,7 @@ async function insertTestStocks(database) {
     console.log('✅ Test stock data inserted successfully');
 
     // 插入股票数据后，初始化历史数据
-    await initializeStockHistory(database);
+    // await initializeStockHistory(database);
   } catch (error) {
     console.error('❌ Error inserting test stock data:', error);
     throw error;
@@ -216,6 +217,7 @@ async function insertTestStocks(database) {
  */
 async function initializeStockHistory(database) {
   try {
+    return;
     console.log('\n🔄 初始化股票历史数据...');
 
     // 延迟加载服务，避免循环依赖

@@ -10,7 +10,7 @@ class StockController {
         return res.status(400).json({ error: 'Stock symbol is required' });
       }
 
-      const stock = await services.stockService.getStockPrice(symbol, simulation_date);
+      const stock = await services.stockService.getRealTimePrice(symbol);
       
       if (!stock) {
         return res.status(404).json({ error: 'Stock not found' });
@@ -33,7 +33,7 @@ class StockController {
       }
       // 如果没有指定symbols参数，symbolArray为空数组，service会返回所有股票
 
-      const stocks = await services.stockService.getMultipleStocks(symbolArray, simulation_date);
+      const stocks = await services.stockService.getMultipleStocks(symbolArray, null);
 
       res.json({ success: true, data: stocks });
     } catch (error) {
@@ -124,7 +124,6 @@ class StockController {
   // 手动初始化历史数据
   async initializeHistoryData(req, res) {
     try {
-      console.log('🔄 手动初始化历史数据请求');
       
       // 延迟加载，避免循环依赖
       const { testStocks, initializeStockHistory } = require('../database/seed-data');
@@ -141,7 +140,6 @@ class StockController {
         }
       });
     } catch (error) {
-      console.error('Error in initializeHistoryData:', error);
       res.status(500).json({ 
         success: false,
         error: 'Failed to initialize history data',

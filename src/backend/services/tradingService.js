@@ -8,7 +8,7 @@ class TradingService {
   }
 
   // 执行买入交易
-  async executeBuyOrder(userId, symbol, shares, price) {
+  async executeBuyOrder(userId, symbol, shares, price, simulationDate = null) {
     console.log(`Executing buy order: ${shares} shares of ${symbol} at $${price} for user ${userId}`);
     
     // 开始数据库事务
@@ -23,8 +23,10 @@ class TradingService {
       this.validateTradeParams(symbol, shares, price);
 
       // 3. 获取用户的模拟日期
-      const simulationDate = await this.authService.getSimulationDate(userId);
-
+      // const simulationDate = await this.authService.getSimulationDate(userId);
+      if(simulationDate === null) {
+        simulationDate = new Date().toISOString().split('T')[0]; // 返回当前
+      }
       // 4. 检查股票是否存在
       const [stockRows] = await connection.execute(
         'SELECT * FROM stocks WHERE symbol = ?',
@@ -119,15 +121,18 @@ class TradingService {
         );
       }
 
-      // 8. 创建交易记录
-      await connection.execute(
-        'INSERT INTO transactions (user_id, portfolio_id, type, symbol, shares, price, total, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [userId, portfolio.id, 'BUY', symbol, shares, price, totalCost, simulationDate]
-      );
 
-      // 9. 更新投资组合现金余额（在事务中完成，确保数据一致性）
+
       const currentCashBalance = parseFloat(portfolio.cash_balance) || 0;
       const newCashBalance = currentCashBalance - totalCost;
+
+      // 8. 创建交易记录
+      await connection.execute(
+        'INSERT INTO transactions (user_id, portfolio_id, type, symbol, shares, price, total, timestamp, cash_balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [userId, portfolio.id, 'BUY', symbol, shares, price, totalCost, simulationDate, newCashBalance ]
+      );
+      // 9. 更新投资组合现金余额（在事务中完成，确保数据一致性）
+
       await connection.execute(
         'UPDATE portfolios SET cash_balance = ?, updated_at = ? WHERE id = ?',
         [newCashBalance, simulationDate, portfolio.id]
@@ -167,7 +172,7 @@ class TradingService {
   }
 
   // 执行卖出交易
-  async executeSellOrder(userId, symbol, shares, price) {
+  async executeSellOrder(userId, symbol, shares, price , simulationDate = null) {
     console.log(`Executing sell order: ${shares} shares of ${symbol} at $${price} for user ${userId}`);
     
     // 开始数据库事务
@@ -181,8 +186,11 @@ class TradingService {
       // 2. 验证参数
       this.validateTradeParams(symbol, shares, price);
 
+      if(simulationDate === null) {
+        simulationDate = new Date().toISOString().split('T')[0]; // 返回当前
+      }
       // 3. 获取用户的模拟日期
-      const simulationDate = await this.authService.getSimulationDate(userId);
+      // const simulationDate = await this.authService.getSimulationDate(userId);
 
       // 4. 获取用户的投资组合
       const [portfolioRows] = await connection.execute(
@@ -255,16 +263,17 @@ class TradingService {
         );
       }
 
-      // 6. 创建交易记录
-      await connection.execute(
-        'INSERT INTO transactions (user_id, portfolio_id, type, symbol, shares, price, total, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [userId, portfolio.id, 'SELL', symbol, shares, price, totalValue, simulationDate]
-      );
 
       // 7. 更新投资组合现金余额
       const currentCashBalance = parseFloat(portfolio.cash_balance) || 0;
       const newCashBalance = currentCashBalance + totalValue;
       
+            // 6. 创建交易记录
+      await connection.execute(
+        'INSERT INTO transactions (user_id, portfolio_id, type, symbol, shares, price, total, timestamp, cash_balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [userId, portfolio.id, 'SELL', symbol, shares, price, totalValue, simulationDate, newCashBalance]
+      );
+
       // 更新现金余额
       await connection.execute(
         'UPDATE portfolios SET cash_balance = ?, updated_at = ? WHERE id = ?',
@@ -312,7 +321,7 @@ class TradingService {
       const offsetNum = Math.max(0, parseInt(offset, 10) || 0);
       
       // 使用更兼容的 SQL 语法
-      const query = `SELECT t.id, t.type, t.symbol, t.shares, t.price, t.total, t.timestamp
+      const query = `SELECT t.id, t.type, t.symbol, t.shares, t.price, t.total, t.timestamp, t.cash_balance
                      FROM transactions t
                      WHERE t.user_id = ?
                      ORDER BY t.id DESC
@@ -324,11 +333,11 @@ class TradingService {
         id: row.id,
         type: row.type,
         symbol: row.symbol,
-        stockName: row.name || row.symbol, // 暂时使用 symbol 作为备用
         shares: row.shares,
         price: parseFloat(row.price),
         total: parseFloat(row.total),
-        timestamp: row.timestamp
+        timestamp: row.timestamp,
+        cashBalance: parseFloat(row.cash_balance)
       }));
 
       return {
@@ -337,6 +346,44 @@ class TradingService {
       };
     } catch (error) {
       console.error('Error getting user transactions:', error);
+      throw error;
+    }
+  }
+
+  // 获取特定股票的交易历史
+  async getStockTransactions(userId, symbol, limit = 100, offset = 0) {
+    try {
+      // 确保参数是正确的数字类型
+      const limitNum = Math.max(1, Math.min(1000, parseInt(limit, 10) || 100));
+      const offsetNum = Math.max(0, parseInt(offset, 10) || 0);
+      
+      const query = `SELECT t.id, t.type, t.symbol, t.shares, t.price, t.total, t.timestamp
+                     FROM transactions t
+                     WHERE t.user_id = ? AND t.symbol = ?
+                     ORDER BY t.timestamp ASC
+                     LIMIT ${limitNum} OFFSET ${offsetNum}`;
+      
+      const rows = await this.db.execute(query, [userId, symbol]);
+
+      const mappedData = rows.map(row => ({
+        id: row.id,
+        type: row.type.toLowerCase(), // 转换为小写以匹配前端期望格式
+        symbol: row.symbol,
+        shares: parseInt(row.shares),
+        price: parseFloat(row.price),
+        total: parseFloat(row.total),
+        timestamp: row.timestamp,
+        // 格式化为图表需要的格式
+        action: row.type.toLowerCase() === 'buy' ? 'buy' : 'sell',
+        date: row.timestamp
+      }));
+
+      return {
+        success: true,
+        data: mappedData
+      };
+    } catch (error) {
+      console.error('Error getting stock transactions:', error);
       throw error;
     }
   }

@@ -37,9 +37,9 @@ export const stockApi = {
     const user = getAuthState();
     
     // 自动添加simulation_date参数
-    if (user?.simulation_date) {
-      params.simulation_date = user.simulation_date;
-    }
+    // if (user?.simulation_date) {
+    //   params.simulation_date = user.simulation_date;
+    // }
     
     const response = await apiClient.get(`/stocks/${symbol}`, params);
     return response; // 返回完整响应
