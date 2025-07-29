@@ -88,11 +88,20 @@ const Analytics = () => {
     // 先获取模拟日期
     authApi.getCurrentUser()
       .then(user => {
-        const simDateStr = user?.simulation_date || user?.simulationDate;
-        setSimulationDate(simDateStr);
+        const userSimDate = user?.simulation_date || user?.simulationDate;
+        // 先查一次所有历史数据，找最大日期
+        return analyticsApi.getPortfolioAnalytics({});
+      })
+      .then(allData => {
+        // 取历史最大日期作为智能 simulationDate
+        let maxDate = null;
+        if (allData.dailyReturns && allData.dailyReturns.length > 0) {
+          maxDate = allData.dailyReturns.reduce((max, cur) => cur.date > max ? cur.date : max, allData.dailyReturns[0].date);
+        }
+        setSimulationDate(maxDate);
         let params = {};
-        if (selectedRange !== 'all' && simDateStr) {
-          const simDate = new Date(simDateStr);
+        if (selectedRange !== 'all' && maxDate) {
+          const simDate = new Date(maxDate);
           let startDate = null;
           if (selectedRange === 'week') {
             startDate = new Date(simDate.getTime() - 7 * 24 * 3600 * 1000);
@@ -105,7 +114,7 @@ const Analytics = () => {
           }
           if (startDate) {
             params.startDate = startDate.toISOString().slice(0, 10);
-            params.endDate = simDateStr;
+            params.endDate = maxDate;
           }
         }
         // All Time: 不传任何时间参数
@@ -269,6 +278,10 @@ const Analytics = () => {
 
       <section style={{ marginBottom: '2.5rem' }}>
         <h3 style={{ color: '#223A5F', fontWeight: 700, fontSize: '1.3rem', letterSpacing: '0.5px', marginBottom: '1rem' }}>Performance Charts</h3>
+        {/* Debug 输出 dailyReturns 数据结构 */}
+        <pre style={{background:'#f8f8f8',color:'#666',fontSize:'0.95rem',padding:'0.5rem 1rem',borderRadius:'8px',marginBottom:'1rem',overflowX:'auto'}}>
+          {JSON.stringify(analyticsData.dailyReturns, null, 2)}
+        </pre>
         <div style={{ background: '#fff', borderRadius: '20px', padding: '2rem', boxShadow: '0 4px 16px rgba(34,58,95,0.08)', border: '1px solid #e5e8ed', maxWidth: '900px', margin: '0 auto' }}>
           <ChartErrorBoundary>
             {analyticsData.dailyReturns && Array.isArray(analyticsData.dailyReturns) && analyticsData.dailyReturns.length > 0 ? (
@@ -277,7 +290,7 @@ const Analytics = () => {
                   labels: analyticsData.dailyReturns.map(d => d.date),
                   datasets: [{
                     label: 'Portfolio Value',
-                    data: analyticsData.dailyReturns.map(d => d.total_value || d.value),
+                    data: analyticsData.dailyReturns.map(d => Number(d.value !== undefined ? d.value : d.total_value)),
                     borderColor: '#223A5F',
                     backgroundColor: 'rgba(34,58,95,0.07)',
                     tension: 0.45,
