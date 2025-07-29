@@ -188,18 +188,57 @@ const Analytics = () => {
         </div>
       </header>
 
-      <section style={{ display: 'flex', gap: '2.5rem', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '2.5rem' }}>
-        {['totalValue', 'totalReturn', 'returnPercentage'].map((key, idx) => (
-          <div key={key} style={{ background: '#fff', borderRadius: '20px', padding: '1.5rem 2.5rem', minWidth: '240px', boxShadow: '0 4px 16px rgba(34,58,95,0.08)', border: '1px solid #e5e8ed', transition: 'transform 0.2s', cursor: 'pointer', position: 'relative' }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.04)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
-            <h4 style={{ margin: 0, color: '#223A5F', fontWeight: 600, fontSize: '1.15rem', letterSpacing: '0.5px' }}>{key === 'totalValue' ? 'Total Assets' : key === 'totalReturn' ? 'Total Return' : 'Return Rate'}</h4>
-            <p style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: '#222' }}>
-              {analyticsData[key] === '--' ? '--' : (key === 'returnPercentage' ? `${analyticsData[key]}%` : `$${Number(analyticsData[key]).toLocaleString()}`)}
-            </p>
-          </div>
-        ))}
-      </section>
+<section
+  style={{
+    display: 'flex',
+    gap: '2rem',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginBottom: '2rem'
+  }}
+>
+  {['totalValue', 'totalReturn', 'returnPercentage'].map((key) => {
+    const isProfit = analyticsData[key] > 0;
+    const isLoss = analyticsData[key] < 0;
+    const isColoredKey = key === 'totalReturn' || key === 'returnPercentage';
+    const colorStyle = isColoredKey
+      ? { color: isProfit ? 'green' : isLoss ? 'red' : 'black' }
+      : {};
+
+    return (
+      <div
+        key={key}
+        style={{
+          background: '#f5f5f5',
+          borderRadius: '12px',
+          padding: '1rem 2rem',
+          minWidth: '200px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+        }}
+      >
+        <h4 style={{ margin: 0 }}>
+          {key === 'totalValue'
+            ? 'Total Assets'
+            : key === 'totalReturn'
+            ? 'Total Return'
+            : 'Return Rate'}
+        </h4>
+        <p
+          style={{
+            fontSize: '1.5rem',
+            fontWeight: 600,
+            margin: 0,
+            ...colorStyle
+          }}
+        >
+          {key === 'returnPercentage'
+            ? `${analyticsData[key]}%`
+            : `$${analyticsData[key].toLocaleString()}`}
+        </p>
+      </div>
+    );
+  })}
+</section>
 
       <section style={{ display: 'flex', justifyContent: 'center', marginBottom: '2.5rem' }}>
         <div style={{ width: '440px', background: '#fff', borderRadius: '20px', boxShadow: '0 4px 16px rgba(34,58,95,0.08)', padding: '2.2rem', border: '1px solid #e5e8ed', position: 'relative', transition: 'transform 0.2s' }}
