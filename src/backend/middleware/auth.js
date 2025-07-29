@@ -4,11 +4,11 @@ const { authService } = require('../services');
 const authenticateToken = async (req, res, next) => {
   try {
     const config = require('../config');
-    // 如果JWT_SECRET为默认值，则跳过鉴权
-    if (config.auth.jwtSecret === 'your-super-secret-jwt-key-change-this-in-production') {
-      req.user = { userId: 0, username: 'dev', email: 'dev@example.com', devMode: true };
-      return next();
-    }
+    // // 如果JWT_SECRET为默认值，则跳过鉴权
+    // if (config.auth.jwtSecret === 'your-super-secret-jwt-key-change-this-in-production') {
+    //   req.user = { userId: 0, username: 'dev', email: 'dev@example.com', devMode: true };
+    //   return next();
+    // }
 
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './Analytics.css';
+import { analyticsApi } from '../../api/analyticsApi';
 
 const Analysis = () => {
   const [analysis, setAnalysis] = useState(null);
@@ -7,12 +8,55 @@ const Analysis = () => {
   const [error, setError] = useState(null);
   const [rawResponse, setRawResponse] = useState('');
 
-  // 调用API获取股票分析和建议
+  // 动态生成AI分析prompt
+  const generatePromptFromData = (data) => {
+    if (!data) return "Please analyze my stock portfolio and provide investment suggestions.";
+    const {
+      totalValue,
+      totalReturn,
+      returnPercentage,
+      dailyReturns,
+      topPerformers,
+      worstPerformers,
+      assetDistribution,
+      maxDrawdown,
+      sharpeRatio,
+      winRate,
+      benchmark
+    } = data;
+    return `
+My portfolio data:
+Total Assets: $${totalValue}
+Total Return: $${totalReturn} (Return Rate: ${returnPercentage?.toFixed(2) || '--'}%)
+Max Drawdown: ${maxDrawdown ? maxDrawdown.toFixed(2) : '--'}%
+Sharpe Ratio: ${sharpeRatio ? sharpeRatio.toFixed(2) : '--'}
+Win Rate: ${winRate ? winRate.toFixed(2) : '--'}%
+Benchmark Comparison: Portfolio ${benchmark?.portfolioReturn || '--'}%, Benchmark ${benchmark?.benchmarkReturn || '--'}%, Relative ${benchmark?.relativePerformance || '--'}%
+
+Recent Daily Returns:
+${Array.isArray(dailyReturns) ? dailyReturns.map(d => `${d.date}: $${d.value}`).join('\n') : '--'}
+
+Top Performers:
+${Array.isArray(topPerformers) ? topPerformers.map(s => `${s.symbol}: $${s.value || '--'}`).join('\n') : '--'}
+
+Worst Performers:
+${Array.isArray(worstPerformers) ? worstPerformers.map(s => `${s.symbol}: $${s.value || '--'}`).join('\n') : '--'}
+
+Asset Distribution:
+${Array.isArray(assetDistribution) ? assetDistribution.map(a => `${a.symbol}: ${a.percent || '--'}%`).join('\n') : '--'}
+
+Please analyze my stock portfolio and provide investment suggestions, including: 1. Asset structure analysis; 2. Performance evaluation; 3. Risk points; 4. Specific operation advice (buy/add, sell/reduce, hold); 5. Industry trend forecast. Present in a clear structure for frontend display.
+`.trim();
+  };
+
+  // Call API to get stock analysis and suggestions
   const fetchStockAnalysis = async () => {
     try {
       setLoading(true);
+      // 先从后端获取投资组合分析数据
+      const analyticsData = await analyticsApi.getPortfolioAnalytics();
+      const promptText = generatePromptFromData(analyticsData);
       const url = "https://ark.cn-beijing.volces.com/api/v3/chat/completions";
-      
       const response = await fetch(url, {
         method: "POST",
         headers: {
@@ -25,7 +69,7 @@ const Analysis = () => {
             {
               "content": [
                 {
-                  "text": "请分析我的股票组合情况并提供投资建议，包括：1. 资产结构分析；2. 收益表现评估；3. 风险点提示；4. 具体操作建议（加仓/减仓/持有）；5. 行业趋势预测。请以清晰的结构呈现，便于前端展示。",
+                  "text": promptText,
                   "type": "text"
                 }
               ],
@@ -34,26 +78,22 @@ const Analysis = () => {
           ]
         })
       });
-
       if (!response.ok) {
-        throw new Error(`API请求失败: ${response.status}`);
+        throw new Error(`API request failed: ${response.status}`);
       }
-
       const apiResult = await response.json();
-      const content = apiResult.choices?.[0]?.message?.content || '未获取到分析内容';
+      const content = apiResult.choices?.[0]?.message?.content || 'Analysis content not obtained';
       setRawResponse(content);
-      
-      // 转换为结构化数据便于展示
       setAnalysis(formatAnalysis(content));
       setLoading(false);
     } catch (err) {
-      setError(`获取股票分析失败: ${err.message}`);
+      setError(`Failed to get stock analysis: ${err.message}`);
       setLoading(false);
-      console.error("股票分析API调用错误:", err);
+      console.error("Stock analysis API call error:", err);
     }
   };
 
-  // 格式化分析内容为结构化数据
+  // Format analysis content to structured data
   const formatAnalysis = (content) => {
     // 简单分割处理，实际可根据API返回格式优化
     const sections = content.split(/###|\n##/).filter(section => section.trim());
@@ -62,7 +102,7 @@ const Analysis = () => {
       fullText: content,
       sections: sections.map(section => {
         const titleMatch = section.match(/^[^\n]+/);
-        const title = titleMatch ? titleMatch[0].trim() : '分析部分';
+        const title = titleMatch ? titleMatch[0].trim() : 'Analysis Section';
         const content = section.replace(title, '').trim();
         
         return { title, content };
@@ -78,7 +118,7 @@ const Analysis = () => {
     return (
       <div className="analytics-page">
         <div className="loading-state">
-          <p>正在获取股票分析和建议...</p>
+          <p>Getting stock analysis and suggestions...</p>
         </div>
       </div>
     );
@@ -103,8 +143,8 @@ const Analysis = () => {
   return (
     <div className="analytics-page">
       <div className="page-header">
-        <h1>股票分析与投资建议</h1>
-        <p>基于市场数据的专业分析</p>
+        <h1>Stock Analysis & Investment Suggestions</h1>
+        <p>Professional analysis based on market data</p>
       </div>
 
       {/* 调试用原始响应 */}
@@ -140,7 +180,7 @@ const Analysis = () => {
             cursor: 'pointer'
           }}
         >
-          刷新分析
+          Refresh Analysis
         </button>
       </div>
     </div>

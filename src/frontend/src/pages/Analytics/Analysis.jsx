@@ -1,35 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './Analytics.css';
-
-// mock 数据
-const analyticsMockData = {
-  totalValue: 120000,
-  totalReturn: 15000,
-  returnPercentage: 14.29,
-  dailyReturns: [
-    { date: '2025-07-21', value: 118000 },
-    { date: '2025-07-22', value: 119000 },
-    { date: '2025-07-23', value: 119500 },
-    { date: '2025-07-24', value: 120000 },
-  ],
-  topPerformers: [
-    { symbol: 'AAPL', change: 8.2 },
-    { symbol: 'TSLA', change: 6.5 },
-    { symbol: 'NVDA', change: 5.9 }
-  ],
-  worstPerformers: [
-    { symbol: 'BABA', change: -4.1 },
-    { symbol: 'PDD', change: -3.7 },
-    { symbol: 'JD', change: -2.9 }
-  ],
-  assetDistribution: [
-    { symbol: 'AAPL', percent: 35 },
-    { symbol: 'TSLA', percent: 25 },
-    { symbol: 'NVDA', percent: 20 },
-    { symbol: 'BABA', percent: 10 },
-    { symbol: 'JD', percent: 10 }
-  ]
-};
+import { analyticsApi } from '../../api/analyticsApi';
 
 // 将结构化数据变为 prompt
 const generatePromptFromData = (data) => {
@@ -104,7 +75,9 @@ const Analysis = () => {
         });
       }, 320); // 100ms增加1%，10秒跑满
 
-      const promptText = generatePromptFromData(analyticsMockData);
+      // 从后端API获取分析数据
+      const analyticsData = await analyticsApi.getPortfolioAnalytics();
+      const promptText = generatePromptFromData(analyticsData);
 
       const response = await fetch("https://ark.cn-beijing.volces.com/api/v3/chat/completions", {
         method: "POST",

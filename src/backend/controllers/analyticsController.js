@@ -19,19 +19,37 @@ exports.getPortfolioAnalytics = async (req, res) => {
         dailyReturns: []
       });
     }
+    // 支持自定义时间区间分析
+    const { startDate, endDate, symbol } = req.query;
     // 总资产：positions表所有持仓市值之和
     const totalValueResult = await db.query(`SELECT SUM(shares * avg_cost) AS totalValue FROM positions WHERE portfolio_id IN (${portfolioIds.join(',')})`);
     // 总收益：portfolios表的total_return之和
     const totalReturnResult = await db.query(`SELECT SUM(total_return) AS totalReturn FROM portfolios WHERE id IN (${portfolioIds.join(',')})`);
     // 收益率：portfolios表的平均total_return_percent
     const returnPercentageResult = await db.query(`SELECT AVG(total_return_percent) AS returnPercentage FROM portfolios WHERE id IN (${portfolioIds.join(',')})`);
-    // 资产分布：positions表各symbol市值占比
-    const assetDistributionResult = await db.query(`SELECT symbol, SUM(shares * avg_cost) AS value FROM positions WHERE portfolio_id IN (${portfolioIds.join(',')}) GROUP BY symbol`);
+    // 资产分布：positions表各symbol市值占比并计算percent
+    const assetRows = await db.query(`SELECT symbol, SUM(shares * avg_cost) AS value FROM positions WHERE portfolio_id IN (${portfolioIds.join(',')}) GROUP BY symbol`);
+    const totalAssets = assetRows.reduce((sum, r) => sum + (r.value || 0), 0);
+    const assetDistributionResult = assetRows.map(r => ({ ...r, percent: totalAssets ? (r.value / totalAssets * 100).toFixed(2) : 0 }));
     // 表现最好/最差：positions表市值变化（此处用市值排序）
-    const topPerformersResult = await db.query(`SELECT symbol, SUM(shares * avg_cost) AS value FROM positions WHERE portfolio_id IN (${portfolioIds.join(',')}) GROUP BY symbol ORDER BY value DESC LIMIT 3`);
-    const worstPerformersResult = await db.query(`SELECT symbol, SUM(shares * avg_cost) AS value FROM positions WHERE portfolio_id IN (${portfolioIds.join(',')}) GROUP BY symbol ORDER BY value ASC LIMIT 3`);
-    // 每日资产变化：portfolio_history表
-    const dailyReturnsResult = await db.query(`SELECT date, total_value FROM portfolio_history WHERE portfolio_id IN (${portfolioIds.join(',')}) ORDER BY date`);
+    const topPerformersResult = assetRows.sort((a, b) => b.value - a.value).slice(0, 3);
+    const worstPerformersResult = assetRows.sort((a, b) => a.value - b.value).slice(0, 3);
+    // 每日资产变化：portfolio_history表，支持区间
+    let dailySql = `SELECT date, total_value FROM portfolio_history WHERE portfolio_id IN (${portfolioIds.join(',')})`;
+    let dailyParams = [];
+    if (startDate && endDate) {
+      dailySql += ' AND date BETWEEN ? AND ?';
+      dailyParams.push(startDate, endDate);
+    }
+    dailySql += ' ORDER BY date';
+    const dailyReturnsResult = await db.query(dailySql, dailyParams);
+    // 单只股票详细分析
+    let stockDetail = null;
+    if (symbol) {
+      const stockRows = await db.query(`SELECT * FROM positions WHERE portfolio_id IN (${portfolioIds.join(',')}) AND symbol = ?`, [symbol]);
+      const priceHistory = await db.query(`SELECT date, close_price FROM stock_history WHERE symbol = ? ORDER BY date`, [symbol]);
+      stockDetail = { position: stockRows[0] || null, priceHistory };
+    }
 
     res.json({
       totalValue: totalValueResult[0]?.totalValue || 0,
@@ -40,7 +58,8 @@ exports.getPortfolioAnalytics = async (req, res) => {
       assetDistribution: assetDistributionResult,
       topPerformers: topPerformersResult,
       worstPerformers: worstPerformersResult,
-      dailyReturns: dailyReturnsResult
+      dailyReturns: dailyReturnsResult,
+      stockDetail
     });
   } catch (err) {
     res.json({
