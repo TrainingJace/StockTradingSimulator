@@ -17,16 +17,16 @@ export const stockApi = {
   async getStocks(symbols = []) {
     const params = {};
     const user = getAuthState();
-    
+
     if (symbols.length > 0) {
       params.symbols = symbols.join(',');
     }
-    
+
     // 自动添加simulation_date参数
     if (user?.simulation_date) {
       params.simulation_date = user.simulation_date;
     }
-    
+
     const response = await apiClient.get('/stocks', params);
     return response; // 返回完整响应，包含 success 和 data 字段
   },
@@ -35,12 +35,12 @@ export const stockApi = {
   async getStock(symbol) {
     const params = {};
     const user = getAuthState();
-    
+
     // 自动添加simulation_date参数
     if (user?.simulation_date) {
       params.simulation_date = user.simulation_date;
     }
-    
+
     const response = await apiClient.get(`/stocks/${symbol}`, params);
     return response; // 返回完整响应
   },
@@ -51,12 +51,12 @@ export const stockApi = {
       symbols: symbols.join(',')
     };
     const user = getAuthState();
-    
+
     // 自动添加simulation_date参数
     if (user?.simulation_date) {
       params.simulation_date = user.simulation_date;
     }
-    
+
     const response = await apiClient.get('/stocks', params);
     return response; // 返回完整响应
   },

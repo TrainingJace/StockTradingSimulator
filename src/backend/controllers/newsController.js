@@ -5,11 +5,10 @@ class NewsController {
   async getStockNews(req, res) {
     try {
       const { symbol } = req.params;
-      let { simulationDate, limit = 3 } = req.query;
+      const { limit = 3 } = req.query;
 
       console.log('=== NEWS CONTROLLER ===');
-      console.log('Request params:', { symbol, simulationDate, limit });
-      console.log('User from req:', req.user ? `ID: ${req.user.id}` : 'No user');
+      console.log('Request params:', { symbol, limit });
 
       if (!symbol) {
         return res.status(400).json({
@@ -18,47 +17,9 @@ class NewsController {
         });
       }
 
-      // 如果没有传入simulationDate，从用户表中获取
-      if (!simulationDate) {
-        console.log('No simulationDate provided, fetching from user data...');
-
-        if (!req.user || !req.user.id) {
-          return res.status(401).json({
-            success: false,
-            error: 'User authentication required to fetch simulation date'
-          });
-        }
-
-        try {
-          const user = await authService.getUserById(req.user.id);
-          if (!user) {
-            return res.status(404).json({
-              success: false,
-              error: 'User not found'
-            });
-          }
-
-          simulationDate = user.simulation_date;
-          console.log('Retrieved simulationDate from user:', simulationDate);
-
-          if (!simulationDate) {
-            return res.status(400).json({
-              success: false,
-              error: 'User does not have a simulation date set'
-            });
-          }
-        } catch (userError) {
-          console.error('Error fetching user data:', userError);
-          return res.status(500).json({
-            success: false,
-            error: 'Failed to fetch user simulation date'
-          });
-        }
-      }
-
-      // 使用真实的新闻服务
+      // 直接获取最新的新闻，不需要 simulationDate
       console.log('Calling newsService.getStockNews...');
-      const news = await newsService.getStockNews(symbol, simulationDate, parseInt(limit));
+      const news = await newsService.getStockNews(symbol, parseInt(limit));
 
       console.log('News service returned:', news.length, 'items');
       if (news.length > 0) {
@@ -68,7 +29,7 @@ class NewsController {
       const responseData = {
         success: true,
         data: news,
-        message: `Retrieved ${news.length} news items before ${simulationDate}`
+        message: `Retrieved ${news.length} latest news items`
       };
 
       console.log('Sending response to frontend:', JSON.stringify(responseData, null, 2));

@@ -3,10 +3,9 @@ import apiClient from './client.js';
 export const newsApi = {
   // 获取特定股票的新闻
   async getStockNews(symbol, options = {}) {
-    const { simulationDate, limit = 10 } = options;
+    const { limit = 3 } = options;
     const params = new URLSearchParams();
 
-    if (simulationDate) params.append('simulationDate', simulationDate);
     if (limit) params.append('limit', limit.toString());
 
     const queryString = params.toString();

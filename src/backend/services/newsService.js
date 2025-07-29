@@ -6,28 +6,22 @@ class NewsService {
   }
 
 
-  async getStockNews(symbol, simulationDate, limit = 3) {
+  async getStockNews(symbol, limit = 3) {
     console.log('\n=== NEWS SERVICE: getStockNews ===');
-    console.log(`Input params: symbol=${symbol}, simulationDate=${simulationDate}, limit=${limit}`);
+    console.log(`Input params: symbol=${symbol}, limit=${limit}`);
 
     try {
       // 参数校验
-      if (!symbol || !simulationDate) {
-        throw new Error('Missing required parameters: symbol and simulationDate are required.');
+      if (!symbol) {
+        throw new Error('Missing required parameter: symbol is required.');
       }
 
-      const cleanSimulationDate = new Date(simulationDate);
       const parsedLimit = parseInt(limit);
-
-      if (isNaN(cleanSimulationDate.getTime())) {
-        throw new Error('Invalid date format. Ensure simulationDate is a valid date string.');
-      }
       if (isNaN(parsedLimit) || parsedLimit <= 0) {
         throw new Error('Limit must be a positive integer.');
       }
 
-      const simulationDateStr = cleanSimulationDate.toISOString().split('T')[0];
-      console.log('Cleaned params:', { symbol, simulationDateStr, parsedLimit });
+      console.log('Cleaned params:', { symbol, parsedLimit });
 
       // 检查 news 表总数
       const countQuery = 'SELECT COUNT(*) as total FROM news';
@@ -51,15 +45,15 @@ class NewsService {
       const simpleResult = await this.db.execute(simpleQuery, [symbol]);
       console.log('Simple query result (first title):', simpleResult[0]?.title || 'No result');
 
-      // 构造主查询
+      // 构造主查询 - 获取最新的新闻
       const query = `
       SELECT id, symbol, title, summary, content, source, sentiment_score, published_date, created_at
       FROM news
-      WHERE symbol = ? AND published_date < ?
+      WHERE symbol = ?
       ORDER BY published_date DESC
       LIMIT ${parsedLimit}
     `;
-      const queryParams = [symbol, simulationDateStr];
+      const queryParams = [symbol];
 
       console.log('Executing main query:', query.trim());
       console.log('With params:', queryParams);

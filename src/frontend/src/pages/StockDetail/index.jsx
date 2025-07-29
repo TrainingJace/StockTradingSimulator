@@ -34,15 +34,15 @@ const StockDetail = () => {
     }, [symbol]);
 
     useEffect(() => {
-        if (stock && stockDetail && userSimulationDate && symbol) {
+        if (stock && stockDetail && symbol) {
             // 只有当新闻数据为空时才获取新闻
             if (!stockDetail.news || stockDetail.news.length === 0) {
                 setCurrentNewsIndex(0);
-                // 基于用户模拟日期获取新闻数据
-                fetchStockNews(symbol, userSimulationDate);
+                // 获取最新的新闻数据
+                fetchStockNews(symbol);
             }
         }
-    }, [stock, symbol, userSimulationDate]); // 移除 stockDetail 依赖以避免无限循环
+    }, [stock, symbol]); // 移除 userSimulationDate 依赖
 
     const fetchUserData = async () => {
         try {
@@ -89,17 +89,15 @@ const StockDetail = () => {
         }
     };
 
-    const fetchStockNews = async (stockSymbol, simulationDate) => {
+    const fetchStockNews = async (stockSymbol) => {
         try {
             setLoadingNews(true);
 
             console.log('=== FETCHING STOCK NEWS ===');
             console.log('Stock symbol:', stockSymbol);
-            console.log('User simulation date (for reference):', simulationDate);
 
-            // 后端现在会自动从用户表中获取simulation_date，所以不需要传递
+            // 获取最新的新闻
             const response = await newsApi.getStockNews(stockSymbol, {
-                simulationDate: simulationDate,
                 limit: 3
             });
 
@@ -161,8 +159,8 @@ const StockDetail = () => {
                     ...prev,
                     news: [{
                         title: `No recent news found for ${stockSymbol}`,
-                        summary: `There are no news articles available for ${stockSymbol} before ${simulationDate}. This could mean the database has no news data for this stock or the simulation date is too early.`,
-                        date: new Date(simulationDate).toLocaleDateString('en-US'),
+                        summary: `There are no recent news articles available for ${stockSymbol}. This could mean the database has no news data for this stock.`,
+                        date: new Date().toLocaleDateString('en-US'),
                         source: 'System'
                     }]
                 }));
