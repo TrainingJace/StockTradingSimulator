@@ -202,6 +202,28 @@ class PortfolioController {
       res.status(500).json({ error: 'Internal server error' });
     }
   }
+
+  // 获取详细的投资收益统计
+  async getInvestmentStats(req, res) {
+    try {
+      const { userId } = req.params;
+
+      if (!userId) {
+        return res.status(400).json({ error: 'User ID is required' });
+      }
+
+      const stats = await services.portfolioService.getPortfolioStats(userId);
+      
+      if (!stats) {
+        return res.status(404).json({ error: 'Portfolio not found' });
+      }
+
+      res.json({ success: true, data: stats });
+    } catch (error) {
+      console.error('Error in getInvestmentStats:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
 }
 
 module.exports = new PortfolioController();

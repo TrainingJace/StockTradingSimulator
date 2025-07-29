@@ -29,27 +29,27 @@ export const useAsyncData = (fetchFunction, dependencies = [], options = {}) => 
     try {
       setLoading(true);
       setError(null);
-      
+
       const result = await fetchFunctionRef.current();
-      
+
       // 处理API响应格式
       const responseData = result?.success ? result.data : result;
       setData(responseData);
-      
+
       // 成功回调
       if (onSuccess) {
         onSuccess(responseData);
       }
-      
+
     } catch (err) {
       const errorMessage = err.message || '获取数据失败';
       setError(errorMessage);
-      
+
       // 错误回调
       if (onError) {
         onError(err);
       }
-      
+
       console.error('数据获取错误:', err);
     } finally {
       setLoading(false);
@@ -83,7 +83,7 @@ export const useAsyncData = (fetchFunction, dependencies = [], options = {}) => 
  */
 export const useSearchableData = (fetchFunction, filterFunction, dependencies = []) => {
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   const {
     data: rawData,
     loading,
@@ -91,7 +91,7 @@ export const useSearchableData = (fetchFunction, filterFunction, dependencies = 
     refetch
   } = useAsyncData(fetchFunction, dependencies);
 
-  const filteredData = rawData && Array.isArray(rawData) 
+  const filteredData = rawData && Array.isArray(rawData)
     ? rawData.filter(item => filterFunction(item, searchTerm))
     : rawData;
 
@@ -118,7 +118,7 @@ export const useSearchableData = (fetchFunction, filterFunction, dependencies = 
  */
 export const usePollingData = (fetchFunction, interval = 30000, dependencies = []) => {
   const [isPolling, setIsPolling] = useState(true);
-  
+
   const {
     data,
     loading,
@@ -151,3 +151,5 @@ export const usePollingData = (fetchFunction, interval = 30000, dependencies = [
     togglePolling
   };
 };
+
+

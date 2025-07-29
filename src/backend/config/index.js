@@ -20,10 +20,10 @@ const config = {
   // API 配置
   apis: {
     stock: {
-      provider: 'alpaca', // 或 'finnhub', 'polygon' 等
+      provider: 'twelvedata', // 或 'finnhub', 'polygon' 等
       apiKey: process.env.STOCK_API_KEY,
       apiSecret: process.env.STOCK_API_SECRET,
-      baseUrl: 'https://api.alpaca.markets/v2',
+      baseUrl: 'https://api.twelvedata.com',
       timeout: 10000
     },
     news: {
@@ -50,7 +50,8 @@ const config = {
   auth: {
     jwtSecret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production',
     tokenExpiry: process.env.JWT_EXPIRY || '24h',
-    bcryptRounds: 10
+    bcryptRounds: 10,
+    simulation_date: process.env.DEFAULT_SIMULATION_DATE || '2023-01-01' // 默认模拟日期
   },
 
   // 缓存配置

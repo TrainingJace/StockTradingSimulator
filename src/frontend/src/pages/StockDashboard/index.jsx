@@ -9,7 +9,8 @@ function StockDashboard() {
   const [selectedStock, setSelectedStock] = useState(null)
   const [showDetailModal, setShowDetailModal] = useState(false)
 
-  // 使用搜索功能的股票数据
+  // 使用混合搜索功能 - 外部API + 本地过滤
+  // stockApi会自动从localStorage获取用户的simulation_date
   const {
     data: stocks,
     loading,
@@ -19,13 +20,17 @@ function StockDashboard() {
     clearSearch,
     refetch
   } = useSearchableData(
+
     () => stockApi.getStocks(),
+
     (stock, term) => {
       if (!term) return true;
       return stock.symbol.toLowerCase().includes(term.toLowerCase()) ||
         stock.name.toLowerCase().includes(term.toLowerCase());
     }
   );
+
+
 
   const handleStockSelect = (stock) => {
     // 在新浏览器窗口中打开股票详情页面
@@ -39,7 +44,8 @@ function StockDashboard() {
   };
 
   const handleRefresh = () => {
-    refetch();
+    clearSearch(); // 先清除搜索
+    refetch(); // 然后刷新数据
   };
 
   return (
@@ -53,11 +59,14 @@ function StockDashboard() {
           <input
             type="text"
             placeholder="Search stock code or name..."
+
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+
             className="search-input"
           />
           {searchTerm && (
+
             <button onClick={clearSearch} className="clear-search">
               ✕
             </button>
@@ -65,6 +74,7 @@ function StockDashboard() {
         </div>
         <button onClick={handleRefresh} className="refresh-btn" disabled={loading}>
           {loading ? 'Refreshing...' : '🔄 Refresh Data'}
+
         </button>
       </div>
 
@@ -73,8 +83,9 @@ function StockDashboard() {
           ❌ {getErrorMessage(error)}
         </div>
       )}
-
       {loading && !error ? (
+
+
         <div className="loading">
           <div className="loading-spinner"></div>
           <p>Loading stock data...</p>
@@ -82,13 +93,16 @@ function StockDashboard() {
       ) : (
         <div className="stocks-grid">
           {stocks && stocks.length === 0 ? (
+
             <div className="no-data">
               {searchTerm ? 'No matching stocks found' : 'No stock data available'}
             </div>
           ) : (
             stocks && stocks.map((stock) => (
+
               <div
                 key={stock.symbol}
+
                 className={`stock-card ${selectedStock?.symbol === stock.symbol ? 'selected' : ''}`}
                 onClick={() => handleStockSelect(stock)}
               >
@@ -112,17 +126,22 @@ function StockDashboard() {
                   >
                     ({formatPercentage(stock.changePercent)})
                   </span>
+
                 </div>
                 <div className="stock-details">
                   <div className="detail-item">
                     <span className="label">Volume:</span>
                     <span className="value">{formatNumber(stock.volume || 0)}</span>
+
                   </div>
                   <div className="detail-item">
                     <span className="label">Market Cap:</span>
                     <span className="value">${formatNumber(stock.marketCap / 1000000000, 1)}B</span>
+
+
                   </div>
                 </div>
+
               </div>
             ))
           )}
@@ -140,6 +159,7 @@ function StockDashboard() {
         <p>Data updated: {new Date().toLocaleString()}</p>
         <p>* This system is for educational demonstration only, data is simulated</p>
         <p>Showing {stocks ? stocks.length : 0} stocks {searchTerm && `(Search: "${searchTerm}")`}</p>
+
       </footer>
     </div>
   )
