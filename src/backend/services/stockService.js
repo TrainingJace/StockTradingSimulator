@@ -199,7 +199,7 @@ class StockService {
           symbol: symbol,
           interval: '1day',
           apikey: this.API_KEY,
-          outputsize: 2,
+          outputsize: 91,
           timezone: "utc"
         }
       });
@@ -222,22 +222,35 @@ class StockService {
           last_updated: latestData.datetime
         };
 
-        // 将新数据保存到缓存表
+        // 批量存储前90天的数据（跳过最远的那一天，因为没有前一天数据计算change）
         try {
-          // 只存储日期部分，不包含时间
-          const dateOnly = new Date(latestData.datetime).toISOString().split('T')[0];
+          const dataToStore = response.data.values.slice(0, -1); // 去掉最后一天（最远的那一天）
+          let storedCount = 0;
+          let skippedCount = 0;
           
-          // 先检查是否已经存在该股票该日期的数据
-          const existQuery = `
-            SELECT id FROM stock_real_history 
-            WHERE symbol = ? AND price_time = ?
-            LIMIT 1
-          `;
-          const existResult = await this.db.execute(existQuery, [symbol, dateOnly]);
-          
-          if (existResult && existResult.length > 0) {
-            console.log(`Data already exists for ${symbol} at ${dateOnly}, skipping cache`);
-          } else {
+          for (let i = 0; i < dataToStore.length; i++) {
+            const currentData = dataToStore[i];
+            const prevData = response.data.values[i + 1]; // 前一天的数据
+            
+            const dateOnly = new Date(currentData.datetime).toISOString().split('T')[0];
+            
+            // 先检查是否已经存在该股票该日期的数据
+            const existQuery = `
+              SELECT id FROM stock_real_history 
+              WHERE symbol = ? AND price_time = ?
+              LIMIT 1
+            `;
+            const existResult = await this.db.execute(existQuery, [symbol, dateOnly]);
+            
+            if (existResult && existResult.length > 0) {
+              skippedCount++;
+              continue; // 跳过已存在的数据
+            }
+            
+            // 计算与前一天的变化
+            const change = parseFloat(currentData.close) - parseFloat(prevData.close);
+            const changePercent = (change / parseFloat(prevData.close)) * 100;
+            
             const insertQuery = `
               INSERT INTO stock_real_history 
               (symbol, price_time, open_price, high_price, low_price, close_price, volume, change_price, change_percent)
@@ -247,17 +260,19 @@ class StockService {
             await this.db.execute(insertQuery, [
               symbol,
               dateOnly,
-              latestData.open,
-              latestData.high,
-              latestData.low,
-              latestData.close,
-              latestData.volume,
-              priceData.change,
-              priceData.changePercent
+              currentData.open,
+              currentData.high,
+              currentData.low,
+              currentData.close,
+              currentData.volume,
+              change,
+              changePercent
             ]);
             
-            console.log(`Cached new data for ${symbol} at ${dateOnly}`);
+            storedCount++;
           }
+          
+          console.log(`Cached ${storedCount} new records for ${symbol}, skipped ${skippedCount} existing records`);
         } catch (cacheError) {
           console.error(`Failed to cache data for ${symbol}:`, cacheError);
           // 继续执行，不因为缓存失败而中断
@@ -286,14 +301,17 @@ class StockService {
       const historyData = await stockHistoryService.getHistoryData(symbol, startDate, endDate);
 
       // 格式化数据，确保与前端期望的格式一致
-      return historyData.map(item => ({
-        date: item.date,
+      const result =  historyData.map(item => ({
+        date: new Date(item.price_time).toISOString().split('T')[0], //yyyy-MM-DD格式
         open: parseFloat(item.open_price),
         high: parseFloat(item.high_price),
         low: parseFloat(item.low_price),
         close: parseFloat(item.close_price),
         volume: parseInt(item.volume)
       }));
+
+      console.log(`Result for ${symbol}:`, result);
+      return result;
     } catch (error) {
       console.error(`Error getting historical data for ${symbol}:`, error);
       return [];

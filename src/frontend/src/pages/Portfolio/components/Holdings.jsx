@@ -249,7 +249,7 @@ function Holdings({ portfolio, onTransactionSuccess }) {
                                 <Legend />
                                 {/* 股票价格主线 */}
                                 <Line 
-                                  type="monotone" 
+                                  type="linear" 
                                   dataKey="price" 
                                   stroke="#1976d2" 
                                   strokeWidth={2.5} 
@@ -258,7 +258,7 @@ function Holdings({ portfolio, onTransactionSuccess }) {
                                 />
                                 {/* 平均成本虚线 */}
                                 <Line 
-                                  type="monotone" 
+                                  type="linear" 
                                   dataKey="avgCost" 
                                   stroke="#888" 
                                   strokeDasharray="4 4" 

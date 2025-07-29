@@ -68,16 +68,13 @@ class TradingApi {
     try {
       // 计算开始和结束日期
       const endDate = new Date();
-      const startDate = new Date();
-      startDate.setDate(endDate.getDate() - days);
-
+     const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 14);
       // 并行获取股票历史价格和交易历史
       const [priceHistoryResponse, transactionHistoryResponse] = await Promise.all([
         apiClient.get(`/stocks/${symbol}/history`, {
-          params: {
-            startDate: startDate.toISOString().split('T')[0],
-            endDate: endDate.toISOString().split('T')[0]
-          }
+          startDate: startDate.toISOString().split('T')[0],
+          endDate: endDate.toISOString().split('T')[0]
         }),
         this.getStockTransactionHistory(symbol)
       ]);
@@ -89,11 +86,10 @@ class TradingApi {
       // 组合数据
       const priceHistory = priceHistoryResponse.data || [];
       const transactions = transactionHistoryResponse.data || [];
-
       // 创建交易映射（按日期）
       const transactionMap = new Map();
       transactions.forEach(transaction => {
-        const date = new Date(transaction.timestamp).toISOString().split('T')[0];
+        const date = transaction.date.split(' ')[0];
         if (!transactionMap.has(date)) {
           transactionMap.set(date, []);
         }
@@ -108,13 +104,17 @@ class TradingApi {
         // 如果当天有多个交易，选择最后一个（或者可以根据需要调整逻辑）
         const lastTransaction = dayTransactions.length > 0 ? dayTransactions[dayTransactions.length - 1] : null;
         
-        return {
-          date: new Date(date).getTime(),
-          price: parseFloat(priceData.close_price || priceData.price),
+        const result =  {
+          date: new Date(date).getTime(), // 时间戳格式 
+          price: parseFloat(priceData.close),
           avgCost: avgCost || parseFloat(priceData.avg_cost) || 0,
           action: lastTransaction ? lastTransaction.action : null,
           shares: lastTransaction ? lastTransaction.shares : null
         };
+
+        console .log(`Chart data for ${symbol} on ${date}:`, result);
+
+        return result;
       });
 
       return {

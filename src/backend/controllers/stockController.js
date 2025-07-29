@@ -47,6 +47,7 @@ class StockController {
       const { symbol } = req.params;
       const { startDate, endDate } = req.query;
 
+      console.log('getHistoricalData called with:', { symbol, startDate, endDate });
       if (!symbol) {
         return res.status(400).json({ error: 'Stock symbol is required' });
       }

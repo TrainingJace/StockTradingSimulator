@@ -286,29 +286,30 @@ class StockHistoryService {
   async getHistoryData(symbol, startDate = null, endDate = null, limit = null) {
     try {
       let query = `
-        SELECT symbol, date, open_price, high_price, low_price, close_price, volume, created_at
-        FROM stock_history 
+        SELECT symbol, price_time, open_price, high_price, low_price, close_price, volume, created_at
+        FROM stock_real_history 
         WHERE symbol = ?
       `;
       const params = [symbol];
 
       if (startDate) {
-        query += ' AND date >= ?';
+        query += ' AND price_time >= ?';
         params.push(startDate);
       }
 
       if (endDate) {
-        query += ' AND date <= ?';
+        query += ' AND price_time <= ?';
         params.push(endDate);
       }
 
-      query += ' ORDER BY date DESC';
+      query += ' ORDER BY price_time DESC';
 
       if (limit) {
         query += ` LIMIT ${limit}`;
       }
 
       const result = await this.db.execute(query, params);
+     
       return result;
     } catch (error) {
       console.error(`获取 ${symbol} 历史数据失败:`, error);
