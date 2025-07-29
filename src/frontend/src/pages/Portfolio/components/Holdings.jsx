@@ -63,13 +63,13 @@ function Holdings({ portfolio, onTransactionSuccess }) {
                 </span>
                 <span className="action-buttons">
                   <button 
-                    className="action-btn buy-btn"
+                    className="action-btn action-buy-btn"
                     onClick={() => handleBuyClick(position)}
                   >
                     Buy
                   </button>
                   <button 
-                    className="action-btn sell-btn"
+                    className="action-btn action-sell-btn"
                     onClick={() => handleSellClick(position)}
                   >
                     Sell
