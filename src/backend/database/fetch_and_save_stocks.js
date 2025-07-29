@@ -10,7 +10,7 @@ const apiKey = 'TTFO5NMW8G9LKPV6';
 async function main() {
     // 连接数据库
     const db = await mysql.createConnection({
-        host: '127.0.0.1',
+        host: 'localhost',
         user: 'root',
         password: 'root',
         database: 'stock_simulator'
