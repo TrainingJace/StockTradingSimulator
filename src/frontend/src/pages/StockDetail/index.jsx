@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { stockDetailData, getDefaultStockDetail } from '../../data/stockDetailData.js';
 import { newsApi } from '../../api/newsApi.js';
 import { stockApi } from '../../api';
+import { authApi } from '../../api/authApi.js';
 import BuyStockModal from '../../components/BuyStockModal.jsx';
 import './StockDetail.css';
 
@@ -16,20 +17,51 @@ const StockDetail = () => {
     const [loadingNews, setLoadingNews] = useState(false);
     const [loadingStock, setLoadingStock] = useState(true);
     const [showBuyModal, setShowBuyModal] = useState(false);
+    const [userSimulationDate, setUserSimulationDate] = useState(null);
+
+    const currentNews = useMemo(() => {
+        const newsList = stockDetail?.news || [];
+        if (newsList.length === 0) return null;
+        if (currentNewsIndex >= newsList.length) return newsList[0]; // fallback
+        return newsList[currentNewsIndex];
+    }, [stockDetail?.news, currentNewsIndex]);
 
     useEffect(() => {
         if (symbol) {
+            fetchUserData();
             fetchStockData(symbol);
         }
     }, [symbol]);
 
     useEffect(() => {
-        if (stock && stockDetail) {
-            setCurrentNewsIndex(0);
-            // 从API获取真实新闻数据
-            fetchStockNews(symbol);
+        if (stock && stockDetail && userSimulationDate && symbol) {
+            // 只有当新闻数据为空时才获取新闻
+            if (!stockDetail.news || stockDetail.news.length === 0) {
+                setCurrentNewsIndex(0);
+                // 基于用户模拟日期获取新闻数据
+                fetchStockNews(symbol, userSimulationDate);
+            }
         }
-    }, [stock, stockDetail, symbol]);
+    }, [stock, symbol, userSimulationDate]); // 移除 stockDetail 依赖以避免无限循环
+
+    const fetchUserData = async () => {
+        try {
+            console.log('=== FETCHING USER DATA ===');
+            const response = await authApi.getCurrentUser();
+            console.log('User API response:', response);
+            if (response.success && response.data) {
+                console.log('User simulation date:', response.data.simulation_date);
+                setUserSimulationDate(response.data.simulation_date);
+            } else {
+                console.log('Failed to get user data or no simulation_date found');
+            }
+            console.log('==========================');
+        } catch (error) {
+            console.error('=== USER DATA ERROR ===');
+            console.error('Failed to fetch user data:', error);
+            console.error('=======================');
+        }
+    };
 
     const fetchStockData = async (stockSymbol) => {
         try {
@@ -43,6 +75,8 @@ const StockDetail = () => {
                     console.log('Found stock data:', foundStock); // 调试信息
                     setStock(foundStock);
                     const detail = stockDetailData[stockSymbol] || getDefaultStockDetail(stockSymbol, foundStock.name);
+                    // 清空默认的新闻数据，等待API数据
+                    detail.news = [];
                     setStockDetail(detail);
                 } else {
                     console.error('Stock not found');
@@ -55,26 +89,99 @@ const StockDetail = () => {
         }
     };
 
-    const fetchStockNews = async (stockSymbol) => {
+    const fetchStockNews = async (stockSymbol, simulationDate) => {
         try {
             setLoadingNews(true);
-            const response = await newsApi.getStockNews(stockSymbol, { limit: 5 });
+
+            console.log('=== FETCHING STOCK NEWS ===');
+            console.log('Stock symbol:', stockSymbol);
+            console.log('User simulation date (for reference):', simulationDate);
+
+            // 后端现在会自动从用户表中获取simulation_date，所以不需要传递
+            const response = await newsApi.getStockNews(stockSymbol, {
+                simulationDate: simulationDate,
+                limit: 3
+            });
+
+            console.log('=== NEWS API RESPONSE ===');
+            console.log('Full response:', response);
+            console.log('Response success:', response.success);
+            console.log('Response data:', response.data);
+            console.log('News count:', response.data?.length || 0);
+            console.log('========================');
 
             if (response.success && response.data?.length > 0) {
+                console.log('Processing news data...');
                 // 更新stockDetail中的新闻数据
-                setStockDetail(prev => ({
-                    ...prev,
-                    news: response.data.map(newsItem => ({
+                const processedNews = response.data.map(newsItem => {
+                    console.log('Original news item:', newsItem);
+
+                    // 处理日期字段，支持多种可能的字段名
+                    let dateValue = newsItem.published_date || newsItem.publishedAt || newsItem.date;
+                    let formattedDate = 'N/A';
+
+                    if (dateValue) {
+                        try {
+                            const dateObj = new Date(dateValue);
+                            if (!isNaN(dateObj.getTime())) {
+                                formattedDate = dateObj.toLocaleDateString('en-US');
+                            } else {
+                                // 如果日期解析失败，尝试直接使用原始值
+                                formattedDate = dateValue.toString();
+                            }
+                        } catch (error) {
+                            console.error('Date parsing error:', error);
+                            formattedDate = dateValue?.toString() || 'N/A';
+                        }
+                    }
+
+                    const processed = {
                         title: newsItem.title,
                         summary: newsItem.summary || newsItem.content?.substring(0, 200) + '...',
-                        date: new Date(newsItem.publishedAt || newsItem.date).toLocaleDateString('en-US'),
-                        source: newsItem.source || 'Financial News'
-                    }))
+                        content: newsItem.content || 'N/A',
+                        sentimentScore: newsItem.sentimentScore ?? newsItem.sentiment_score ?? 'N/A',
+                        date: formattedDate,
+                        source: newsItem.source || 'N/A'
+                    };
+                    console.log('Processed news item:', processed);
+                    return processed;
+                });
+
+                console.log('Final processed news array:', processedNews);
+
+                setStockDetail(prev => ({
+                    ...prev,
+                    news: processedNews
+                }));
+            } else {
+                console.log('No news data found, using fallback message');
+                console.log('Response structure:', { success: response.success, dataLength: response.data?.length, data: response.data });
+                // 如果没有找到新闻，显示提示信息
+                setStockDetail(prev => ({
+                    ...prev,
+                    news: [{
+                        title: `No recent news found for ${stockSymbol}`,
+                        summary: `There are no news articles available for ${stockSymbol} before ${simulationDate}. This could mean the database has no news data for this stock or the simulation date is too early.`,
+                        date: new Date(simulationDate).toLocaleDateString('en-US'),
+                        source: 'System'
+                    }]
                 }));
             }
         } catch (error) {
-            console.error('Failed to fetch news:', error);
-            // 如果API失败，保持使用默认新闻数据
+            console.error('=== NEWS API ERROR ===');
+            console.error('Error details:', error);
+            console.error('Error message:', error.message);
+            console.error('=====================');
+            // 如果API失败，显示错误信息
+            setStockDetail(prev => ({
+                ...prev,
+                news: [{
+                    title: 'Failed to load news',
+                    summary: 'Unable to retrieve news data at this time. Please try again later.',
+                    date: new Date().toLocaleDateString('en-US'),
+                    source: 'System'
+                }]
+            }));
         } finally {
             setLoadingNews(false);
         }
@@ -139,8 +246,6 @@ const StockDetail = () => {
         { key: 'weekly', label: 'Weekly' },
         { key: 'monthly', label: 'Monthly' }
     ];
-
-    const currentNews = stockDetail.news[currentNewsIndex];
 
     return (
         <div className="stock-detail-page">
@@ -318,34 +423,49 @@ const StockDetail = () => {
                             <div className="news-loading">
                                 <p>Loading news...</p>
                             </div>
-                        ) : currentNews ? (
-                            <div className="news-item">
-                                <div className="news-header">
-                                    <h4>{currentNews.title}</h4>
-                                    <span className="news-date">{currentNews.date}</span>
-                                </div>
-                                <p className="news-summary">{currentNews.summary}</p>
-                                <span className="news-source">Source: {currentNews.source}</span>
-                            </div>
                         ) : (
-                            <div className="news-empty">
-                                <p>No related news available</p>
-                            </div>
-                        )}
-                        {stockDetail?.news?.length > 0 && (
-                            <div className="news-indicators">
-                                {stockDetail.news.map((_, index) => (
-                                    <span
-                                        key={index}
-                                        className={`indicator ${index === currentNewsIndex ? 'active' : ''}`}
-                                        onClick={() => setCurrentNewsIndex(index)}
-                                    />
-                                ))}
-                            </div>
+                            <>
+                                {Array.isArray(stockDetail?.news) && stockDetail.news.length > 0 ? (
+                                    <div className="news-item">
+                                        <div className="news-header">
+                                            <h4>{currentNews?.title || 'Untitled'}</h4>
+                                            <span className="news-date">{currentNews?.date || 'N/A'}</span>
+                                        </div>
+                                        <p className="news-summary">
+                                            <strong>Summary:</strong> {currentNews?.summary || 'No summary available.'}
+                                        </p>
+                                        <p className="news-content">
+                                            <strong>Content:</strong> {currentNews?.content || 'No content available.'}
+                                        </p>
+                                        <p className="news-sentiment">
+                                            <strong>Sentiment Score:</strong> {currentNews?.sentimentScore || 'N/A'}
+                                        </p>
+                                        <span className="news-source">
+                                            Source: {currentNews?.source || 'Unknown'}
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <div className="news-empty">
+                                        <p>No related news available</p>
+                                    </div>
+                                )}
+
+                                {/* 指示器 */}
+                                {stockDetail?.news?.length > 0 && (
+                                    <div className="news-indicators">
+                                        {stockDetail.news.map((_, index) => (
+                                            <span
+                                                key={index}
+                                                className={`indicator ${index === currentNewsIndex ? 'active' : ''}`}
+                                                onClick={() => setCurrentNewsIndex(index)}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>
-
                 {/* 右下角 - 操作按钮 */}
                 <div className="actions-section">
                     <button className="action-btn watchlist-btn" onClick={handleAddToWatchlist}>
