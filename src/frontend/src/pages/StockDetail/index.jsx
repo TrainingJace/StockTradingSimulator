@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { stockDetailData, getDefaultStockDetail } from '../../data/stockDetailData.js';
 import { newsApi } from '../../api/newsApi.js';
 import { stockApi } from '../../api';
 import { authApi } from '../../api/authApi.js';
@@ -47,7 +46,7 @@ const StockDetail = () => {
     // 根据时间范围格式化时间标签
     const formatTimeLabel = (datetime, timeframe) => {
         const date = new Date(datetime);
-        
+
         switch (timeframe) {
             case 'daily':
                 // Daily: 检查是否需要显示日期
@@ -56,40 +55,40 @@ const StockDetail = () => {
                     const firstDate = new Date(currentChartData[0].datetime);
                     const lastDate = new Date(currentChartData[currentChartData.length - 1].datetime);
                     const isSameDay = firstDate.toDateString() === lastDate.toDateString();
-                    
+
                     if (!isSameDay) {
                         // 跨天数据，显示月/日 时:分
-                        return date.toLocaleDateString('en-US', { 
-                            month: 'numeric', 
-                            day: 'numeric' 
-                        }) + ' ' + date.toLocaleTimeString('en-US', { 
-                            hour: '2-digit', 
+                        return date.toLocaleDateString('en-US', {
+                            month: 'numeric',
+                            day: 'numeric'
+                        }) + ' ' + date.toLocaleTimeString('en-US', {
+                            hour: '2-digit',
                             minute: '2-digit',
-                            hour12: false 
+                            hour12: false
                         });
                     }
                 }
                 // 同一天数据，只显示时:分
-                return date.toLocaleTimeString('en-US', { 
-                    hour: '2-digit', 
+                return date.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
                     minute: '2-digit',
-                    hour12: false 
+                    hour12: false
                 });
             case 'weekly':
                 // Weekly: 显示月/日 时:分 格式 (如: 12/25 09:00)
-                return date.toLocaleDateString('en-US', { 
-                    month: 'numeric', 
-                    day: 'numeric' 
-                }) + ' ' + date.toLocaleTimeString('en-US', { 
-                    hour: '2-digit', 
+                return date.toLocaleDateString('en-US', {
+                    month: 'numeric',
+                    day: 'numeric'
+                }) + ' ' + date.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
                     minute: '2-digit',
-                    hour12: false 
+                    hour12: false
                 });
             case 'monthly':
                 // Monthly: 显示月/日 格式 (如: 12/25)
-                return date.toLocaleDateString('en-US', { 
-                    month: 'numeric', 
-                    day: 'numeric' 
+                return date.toLocaleDateString('en-US', {
+                    month: 'numeric',
+                    day: 'numeric'
                 });
             default:
                 return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -146,9 +145,11 @@ const StockDetail = () => {
                 if (foundStock) {
                     console.log('Found stock data:', foundStock); // 调试信息
                     setStock(foundStock);
-                    const detail = stockDetailData[stockSymbol] || getDefaultStockDetail(stockSymbol, foundStock.name);
-                    // 清空默认的新闻数据，等待API数据
-                    detail.news = [];
+                    // 创建基本的股票详情对象，不依赖模拟数据
+                    const detail = {
+                        logo: `https://financialmodelingprep.com/image-stock/${stockSymbol}.png`,
+                        news: [] // 初始为空，等待API数据
+                    };
                     setStockDetail(detail);
                 } else {
                     console.error('Stock not found');
@@ -259,7 +260,7 @@ const StockDetail = () => {
 
     const fetchAllChartData = async (stockSymbol) => {
         const apiKey = '7a2f00f6984b4c24a36501313ffd15e0';
-        
+
         // 构建所有时间范围的API URL，使用不同的时间间隔
         const timeframes = {
             // Daily: 1分钟间隔，显示一天的数据
@@ -289,7 +290,7 @@ const StockDetail = () => {
         const promises = Object.entries(timeframes).map(async ([timeframe, url]) => {
             try {
                 setLoadingChart(prev => ({ ...prev, [timeframe]: true }));
-                
+
                 const response = await fetch(url);
                 const data = await response.json();
 
@@ -323,13 +324,13 @@ const StockDetail = () => {
         // 等待所有请求完成
         const results = await Promise.all(promises);
 
-        
+
         // 更新所有时间范围的数据
         const newChartData = {};
         results.forEach(({ timeframe, data }) => {
             newChartData[timeframe] = data;
         });
-        
+
         setChartData(prev => ({ ...prev, ...newChartData }));
         console.log('All chart data fetched:', newChartData);
     };
@@ -400,31 +401,46 @@ const StockDetail = () => {
                 {/* 左上角 - K线图 */}
                 <div className="chart-section">
                     <div className="chart-header">
-                        <h3>Price Trend</h3>
-                        {/* 显示当前时间范围信息 */}
-                        {currentChartData && currentChartData.length > 0 && (
-                            <div className="chart-info">
-                                <span className="chart-range">
-                                    {(() => {
-                                        const firstDate = new Date(currentChartData[0].datetime);
-                                        const lastDate = new Date(currentChartData[currentChartData.length - 1].datetime);
-                                        
-                                        if (selectedTimeframe === 'daily') {
-                                            const isSameDay = firstDate.toDateString() === lastDate.toDateString();
-                                            if (isSameDay) {
-                                                return `${firstDate.toLocaleDateString('en-US')} (30min intervals)`;
+                        <div className="chart-title-section">
+                            <h3>Price Trend</h3>
+                            {/* 显示当前时间范围信息 */}
+                            {currentChartData && currentChartData.length > 0 && (
+                                <div className="chart-info">
+                                    <span className="chart-range">
+                                        {(() => {
+                                            const firstDate = new Date(currentChartData[0].datetime);
+                                            const lastDate = new Date(currentChartData[currentChartData.length - 1].datetime);
+
+                                            if (selectedTimeframe === 'daily') {
+                                                const isSameDay = firstDate.toDateString() === lastDate.toDateString();
+                                                if (isSameDay) {
+                                                    return `${firstDate.toLocaleDateString('en-US')} (30min intervals)`;
+                                                } else {
+                                                    return `${firstDate.toLocaleDateString('en-US')} - ${lastDate.toLocaleDateString('en-US')} (30min intervals)`;
+                                                }
+                                            } else if (selectedTimeframe === 'weekly') {
+                                                return `${firstDate.toLocaleDateString('en-US')} - ${lastDate.toLocaleDateString('en-US')} (1hour intervals)`;
                                             } else {
-                                                return `${firstDate.toLocaleDateString('en-US')} - ${lastDate.toLocaleDateString('en-US')} (30min intervals)`;
+                                                return `${firstDate.toLocaleDateString('en-US')} - ${lastDate.toLocaleDateString('en-US')} (1day intervals)`;
                                             }
-                                        } else if (selectedTimeframe === 'weekly') {
-                                            return `${firstDate.toLocaleDateString('en-US')} - ${lastDate.toLocaleDateString('en-US')} (1hour intervals)`;
-                                        } else {
-                                            return `${firstDate.toLocaleDateString('en-US')} - ${lastDate.toLocaleDateString('en-US')} (1day intervals)`;
-                                        }
-                                    })()}
-                                </span>
-                            </div>
-                        )}
+                                        })()}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 价格显示区域 - 放在header内部 */}
+                        <div className="price-display">
+                            <span className="current-price">${formatPrice(stock.price)}</span>
+                            <span
+                                className="price-change"
+                                style={{ color: getPriceChangeColor(stock.change) }}
+                            >
+                                {stock.change >= 0 ? '+' : ''}${formatPrice(Math.abs(stock.change))}
+                                ({stock.changePercent?.toFixed(2)}%)
+                            </span>
+                        </div>
+
                         <div className="timeframe-buttons">
                             {timeframes.map((timeframe) => (
                                 <button
@@ -444,18 +460,9 @@ const StockDetail = () => {
                             ))}
                         </div>
                     </div>
+
                     <div className="chart-container">
                         <div className="chart-placeholder">
-                            <div className="price-display">
-                                <span className="current-price">${formatPrice(stock.price)}</span>
-                                <span
-                                    className="price-change"
-                                    style={{ color: getPriceChangeColor(stock.change) }}
-                                >
-                                    {stock.change >= 0 ? '+' : ''}${formatPrice(Math.abs(stock.change))}
-                                    ({stock.changePercent?.toFixed(2)}%)
-                                </span>
-                            </div>
                             <div className="simple-chart">
                                 {loadingChart[selectedTimeframe] ? (
                                     <div className="chart-loading">
@@ -509,13 +516,13 @@ const StockDetail = () => {
                                             (() => {
                                                 const separators = [];
                                                 let lastDate = '';
-                                                
+
                                                 currentChartData.forEach((data, index) => {
                                                     if (index === 0) {
                                                         lastDate = new Date(data.datetime).toDateString();
                                                         return;
                                                     }
-                                                    
+
                                                     const currentDate = new Date(data.datetime).toDateString();
                                                     if (currentDate !== lastDate) {
                                                         const x = 70 + (index * (660 / (currentChartData.length - 1 || 1)));
@@ -534,7 +541,7 @@ const StockDetail = () => {
                                                         lastDate = currentDate;
                                                     }
                                                 });
-                                                
+
                                                 return separators;
                                             })()
                                         )}
@@ -603,25 +610,25 @@ const StockDetail = () => {
                                                             {(() => {
                                                                 const date = new Date(data.datetime);
                                                                 let formattedDate;
-                                                                
+
                                                                 if (selectedTimeframe === 'daily') {
-                                                                    formattedDate = date.toLocaleDateString('en-US') + ' ' + 
-                                                                                  date.toLocaleTimeString('en-US', { 
-                                                                                      hour: '2-digit', 
-                                                                                      minute: '2-digit',
-                                                                                      hour12: false 
-                                                                                  });
+                                                                    formattedDate = date.toLocaleDateString('en-US') + ' ' +
+                                                                        date.toLocaleTimeString('en-US', {
+                                                                            hour: '2-digit',
+                                                                            minute: '2-digit',
+                                                                            hour12: false
+                                                                        });
                                                                 } else if (selectedTimeframe === 'weekly') {
-                                                                    formattedDate = date.toLocaleDateString('en-US') + ' ' + 
-                                                                                  date.toLocaleTimeString('en-US', { 
-                                                                                      hour: '2-digit', 
-                                                                                      minute: '2-digit',
-                                                                                      hour12: false 
-                                                                                  });
+                                                                    formattedDate = date.toLocaleDateString('en-US') + ' ' +
+                                                                        date.toLocaleTimeString('en-US', {
+                                                                            hour: '2-digit',
+                                                                            minute: '2-digit',
+                                                                            hour12: false
+                                                                        });
                                                                 } else {
                                                                     formattedDate = date.toLocaleDateString('en-US');
                                                                 }
-                                                                
+
                                                                 return `${formattedDate}
 Open: $${data.open.toFixed(2)}
 High: $${data.high.toFixed(2)}
@@ -631,7 +638,7 @@ Volume: ${data.volume.toLocaleString()}`;
                                                             })()}
                                                         </title>
                                                     </rect>
-                                                    
+
                                                     {/* 股价标签 - 显示收盘价 */}
                                                     <text
                                                         x={x}
@@ -640,7 +647,7 @@ Volume: ${data.volume.toLocaleString()}`;
                                                         fill="#2c3e50"
                                                         textAnchor="middle"
                                                         fontWeight="600"
-                                                        style={{ 
+                                                        style={{
                                                             textShadow: '1px 1px 2px rgba(255,255,255,0.8)',
                                                             filter: 'drop-shadow(0px 1px 1px rgba(0,0,0,0.3))'
                                                         }}
@@ -667,46 +674,46 @@ Volume: ${data.volume.toLocaleString()}`;
                                                 {currentChartData.length > 0 && (
                                                     (() => {
                                                         // 根据数据量和时间范围决定显示的标签数量
-                                                        const maxLabels = selectedTimeframe === 'daily' ? 6 : 
-                                                                         selectedTimeframe === 'weekly' ? 8 : 10;
-                                                        
+                                                        const maxLabels = selectedTimeframe === 'daily' ? 6 :
+                                                            selectedTimeframe === 'weekly' ? 8 : 10;
+
                                                         if (selectedTimeframe === 'daily' || selectedTimeframe === 'weekly') {
                                                             // Daily和Weekly模式：优先在日期变化处显示标签
                                                             const labels = [];
                                                             let lastDisplayedDate = '';
                                                             let labelCount = 0;
-                                                            
+
                                                             currentChartData.forEach((data, index) => {
                                                                 const currentDate = new Date(data.datetime);
                                                                 const dateString = currentDate.toDateString();
                                                                 const x = 70 + (index * (660 / (currentChartData.length - 1 || 1)));
-                                                                
+
                                                                 // 在日期变化处、第一个点、最后一个点显示标签
-                                                                const shouldShow = index === 0 || 
-                                                                                 index === currentChartData.length - 1 || 
-                                                                                 (dateString !== lastDisplayedDate && labelCount < maxLabels);
-                                                                
+                                                                const shouldShow = index === 0 ||
+                                                                    index === currentChartData.length - 1 ||
+                                                                    (dateString !== lastDisplayedDate && labelCount < maxLabels);
+
                                                                 // 对于Daily模式，如果标签太多，增加间隔控制
                                                                 if (selectedTimeframe === 'daily' && shouldShow && labelCount >= 2) {
                                                                     // 当已经有2个或更多标签时，检查与上一个标签的距离
-                                                                    const lastLabelIndex = labels.length > 0 ? 
+                                                                    const lastLabelIndex = labels.length > 0 ?
                                                                         parseInt(labels[labels.length - 1].key.split('-')[1]) : 0;
                                                                     if (index - lastLabelIndex < Math.floor(currentChartData.length / maxLabels)) {
                                                                         return; // 跳过太近的标签
                                                                     }
                                                                 }
-                                                                
+
                                                                 if (shouldShow) {
                                                                     const label = formatTimeLabel(data.datetime, selectedTimeframe);
                                                                     labels.push(
-                                                                        <text 
-                                                                            key={`time-${index}`} 
-                                                                            x={x} 
-                                                                            y="485" 
-                                                                            fontSize="9" 
-                                                                            fill="#666" 
+                                                                        <text
+                                                                            key={`time-${index}`}
+                                                                            x={x}
+                                                                            y="485"
+                                                                            fontSize="9"
+                                                                            fill="#666"
                                                                             textAnchor="middle"
-                                                                            style={{ 
+                                                                            style={{
                                                                                 fontFamily: 'monospace',
                                                                                 userSelect: 'none'
                                                                             }}
@@ -718,25 +725,25 @@ Volume: ${data.volume.toLocaleString()}`;
                                                                     labelCount++;
                                                                 }
                                                             });
-                                                            
+
                                                             return labels;
                                                         } else {
                                                             // Monthly模式：均匀分布标签
                                                             const step = Math.max(1, Math.ceil(currentChartData.length / maxLabels));
-                                                            
+
                                                             return currentChartData.map((data, index) => {
                                                                 if (index % step === 0 || index === currentChartData.length - 1) {
                                                                     const x = 70 + (index * (660 / (currentChartData.length - 1 || 1)));
                                                                     const label = formatTimeLabel(data.datetime, selectedTimeframe);
                                                                     return (
-                                                                        <text 
-                                                                            key={`time-${index}`} 
-                                                                            x={x} 
-                                                                            y="485" 
-                                                                            fontSize="11" 
-                                                                            fill="#666" 
+                                                                        <text
+                                                                            key={`time-${index}`}
+                                                                            x={x}
+                                                                            y="485"
+                                                                            fontSize="11"
+                                                                            fill="#666"
                                                                             textAnchor="middle"
-                                                                            style={{ 
+                                                                            style={{
                                                                                 fontFamily: 'monospace',
                                                                                 userSelect: 'none'
                                                                             }}
