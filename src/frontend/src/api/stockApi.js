@@ -136,6 +136,22 @@ export const stockApi = {
     }
   },
 
+  // 获取并更新公司概览数据（从Alpha Vantage）
+  async fetchCompanyOverview(symbol) {
+    try {
+      console.log(`=== Frontend: Fetching company overview for ${symbol} ===`);
+      const response = await apiClient.post(`/stocks/fetch-overview/${symbol}`);
+      console.log('Fetch company overview API response:', response);
+      return response; // 返回完整响应
+    } catch (error) {
+      console.error('Error fetching company overview:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  },
+
   // 订阅股票实时更新
   async subscribeToStock(symbol) {
     const response = await apiClient.post(`/stocks/${symbol}/subscribe`);

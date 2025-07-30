@@ -21,6 +21,10 @@ router.get('/market/movers', stockController.getTopMovers);
 // 使用方式: GET /api/stocks/company-info/:symbol
 router.get('/company-info/:symbol', stockController.getCompanyInfo);
 
+// 获取并更新公司概览数据 - 必须在 /:symbol 之前
+// 使用方式: POST /api/stocks/fetch-overview/:symbol
+router.post('/fetch-overview/:symbol', stockController.fetchCompanyOverview);
+
 // 历史数据管理端点 - 必须在 /:symbol 之前
 router.post('/history/initialize', stockController.initializeHistoryData);
 router.get('/history/status', stockController.checkHistoryDataStatus);

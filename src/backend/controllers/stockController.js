@@ -205,6 +205,43 @@ class StockController {
     }
   }
 
+  async fetchCompanyOverview(req, res) {
+    try {
+      const { symbol } = req.params;
+
+      if (!symbol) {
+        return res.status(400).json({
+          success: false,
+          error: 'Stock symbol is required'
+        });
+      }
+
+      console.log(`=== Fetching company overview for ${symbol} ===`);
+
+      const result = await services.stockService.fetchAndUpdateCompanyOverview(symbol);
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          error: result.error
+        });
+      }
+
+      res.json({
+        success: true,
+        data: result.data,
+        message: `Company overview data updated successfully for ${symbol}`
+      });
+    } catch (error) {
+      console.error('Error in fetchCompanyOverview:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        message: error.message
+      });
+    }
+  }
+
   async getCompanyInfo(req, res) {
     try {
       const { symbol } = req.params;
