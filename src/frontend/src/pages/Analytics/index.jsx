@@ -123,9 +123,9 @@ const Analytics = () => {
         </div>
       </header>
 
-      {/* 总资产统计和饼图布局在一行 */}
-      <section style={{ display: 'flex', justifyContent: 'center', gap: '2rem', marginBottom: '2.5rem' }}>
-        {/* 左侧总资产统计 */}
+      {/* Main content section */}
+      <section style={{ display: 'flex', justifyContent: 'center', gap: '2rem' }}>
+        {/* Left side stats */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {['totalValue', 'totalReturn', 'returnPercentage'].map((key) => {
             const isProfit = analyticsData[key] > 0;
@@ -157,8 +157,17 @@ const Analytics = () => {
           })}
         </div>
 
-        {/* 中间饼图 */}
-        <div style={{ width: '440px', background: '#fff', borderRadius: '20px', boxShadow: '0 4px 16px rgba(34,58,95,0.08)', padding: '2.2rem', border: '1px solid #e5e8ed' }}>
+        {/* Right side pie chart */}
+        <div style={{ 
+          width: '380px',
+          background: '#fff', 
+          borderRadius: '12px', 
+          boxShadow: '0 2px 8px rgba(0,0,0,0.05)', 
+          padding: '1.5rem',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center'
+        }}>
           <ChartErrorBoundary>
             {Array.isArray(analyticsData.assetDistribution) && analyticsData.assetDistribution.length > 0 ? (
               <Pie
@@ -167,16 +176,9 @@ const Analytics = () => {
                   datasets: [{
                     data: analyticsData.assetDistribution.map(i => Number(i.percent)),
                     backgroundColor: [
-                      '#FF6384', // 粉红
-                      '#36A2EB', // 蓝色
-                      '#FFCE56', // 黄色
-                      '#4BC0C0', // 青色
-                      '#9966FF', // 紫色
-                      '#FF9F40', // 橙色
-                      '#7FD8BE', // 薄荷绿
-                      '#FC5185', // 玫红
-                      '#4B7BE5', // 靛蓝
-                      '#6C757D'  // 灰色
+                      '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
+                      '#9966FF', '#FF9F40', '#7FD8BE', '#FC5185', 
+                      '#4B7BE5', '#6C757D'
                     ],
                     borderColor: '#fff',
                     borderWidth: 2
@@ -185,101 +187,21 @@ const Analytics = () => {
                 options={{ 
                   plugins: { 
                     legend: { 
-                      position: 'bottom', 
+                      position: 'bottom',
                       labels: { 
-                        color: '#222', 
-                        font: { 
-                          size: 15, 
-                          weight: 'bold' 
-                        } 
-                      } 
+                        color: '#222',
+                        font: { size: 13, weight: 'bold' },
+                        boxWidth: 14,
+                        padding: 15
+                      }
                     } 
-                  } 
+                  },
+                  maintainAspectRatio: true,
+                  responsive: true
                 }}
               />
             ) : (
-              <div style={{ textAlign: 'center', color: '#999', marginTop: '2rem' }}>No asset distribution data</div>
-            )}
-          </ChartErrorBoundary>
-        </div>
-
-        {/* 右侧 Top/Worst Performers */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', minWidth: '250px' }}>
-          {/* Top Performers */}
-          <div style={{ background: '#fff', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 2px 8px rgba(34,58,95,0.08)' }}>
-            <h4 style={{ color: '#223A5F', margin: '0 0 1rem 0' }}>Top Performers</h4>
-            <ul style={{ padding: 0, margin: 0, listStyle: 'none' }}>
-              {(analyticsData.topPerformers || []).map(item => (
-                <li key={item.symbol} style={{ marginBottom: '0.8rem' }}>
-                  <div style={{ fontWeight: 600 }}>{item.symbol}</div>
-                  <div>
-                    <span style={{ color: item.change >= 0 ? 'green' : 'red', marginRight: '8px' }}>
-                      {item.change > 0 ? '+' : ''}{item.change}%
-                    </span>
-                    <span style={{ color: item.profit >= 0 ? 'green' : 'red', fontSize: '0.9rem' }}>
-                      ({item.profit > 0 ? '+' : ''}${Number(item.profit).toFixed(2)})
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-          
-          {/* Worst Performers */}
-          <div style={{ background: '#fff', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 2px 8px rgba(34,58,95,0.08)' }}>
-            <h4 style={{ color: '#223A5F', margin: '0 0 1rem 0' }}>Worst Performers</h4>
-            <ul style={{ padding: 0, margin: 0, listStyle: 'none' }}>
-              {(analyticsData.worstPerformers || []).map(item => (
-                <li key={item.symbol} style={{ marginBottom: '0.8rem' }}>
-                  <div style={{ fontWeight: 600 }}>{item.symbol}</div>
-                  <div>
-                    <span style={{ color: item.change >= 0 ? 'green' : 'red', marginRight: '8px' }}>
-                      {item.change > 0 ? '+' : ''}{item.change}%
-                    </span>
-                    <span style={{ color: item.profit >= 0 ? 'green' : 'red', fontSize: '0.9rem' }}>
-                      ({item.profit > 0 ? '+' : ''}${Number(item.profit).toFixed(2)})
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      {/* 折线图 */}
-      <section style={{ marginBottom: '2.5rem' }}>
-        <h3 style={{ color: '#223A5F', fontWeight: 700, fontSize: '1.3rem', letterSpacing: '0.5px', marginBottom: '1rem' }}>Performance Charts</h3>
-        <div style={{ background: '#fff', borderRadius: '20px', padding: '2rem', boxShadow: '0 4px 16px rgba(34,58,95,0.08)', border: '1px solid #e5e8ed', maxWidth: '900px', margin: '0 auto' }}>
-          <ChartErrorBoundary>
-            {analyticsData.dailyReturns && Array.isArray(analyticsData.dailyReturns) && analyticsData.dailyReturns.length > 0 ? (
-              <Line
-                data={{
-                  labels: analyticsData.dailyReturns.map(d => d.date),
-                  datasets: [{
-                    label: 'Portfolio Value',
-                    data: analyticsData.dailyReturns.map(d => Number(d.value !== undefined ? d.value : d.total_value)),
-                    borderColor: '#223A5F',
-                    backgroundColor: 'rgba(34,58,95,0.07)',
-                    tension: 0.45,
-                    pointRadius: 2,
-                    fill: true,
-                    borderWidth: 3,
-                    pointBackgroundColor: '#6C7A89',
-                    pointBorderColor: '#fff',
-                    pointHoverRadius: 4
-                  }]
-                }}
-                options={{
-                  plugins: { legend: { display: true } },
-                  scales: {
-                    y: { ticks: { callback: v => `$${v}` }, beginAtZero: false, grid: { color: '#e5e8ed' } },
-                    x: { grid: { color: '#e5e8ed' } }
-                  }
-                }}
-              />
-            ) : (
-              <div style={{ textAlign: 'center', color: '#999', marginTop: '2rem' }}>No performance data</div>
+              <div style={{ textAlign: 'center', color: '#999', marginTop: '1rem' }}>No asset distribution data</div>
             )}
           </ChartErrorBoundary>
         </div>

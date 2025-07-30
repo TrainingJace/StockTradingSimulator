@@ -149,7 +149,7 @@ function StockDashboard() {
   return (
     <div className="stock-dashboard">
       <header className="dashboard-header">
-        <h1>📈 Stock Trading Simulator</h1>
+        <h1>📈 StockPilot</h1>
       </header>
 
       <div className="dashboard-controls">
