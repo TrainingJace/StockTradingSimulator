@@ -5,6 +5,7 @@ import { stockApi } from '../../api';
 import { authApi } from '../../api/authApi.js';
 import BuyStockModal from '../../components/BuyStockModal.jsx';
 import KChart from './components/KChart.jsx';
+import CompanyHeader from './components/CompanyHeader.jsx';
 import './StockDetail.css';
 
 const StockDetail = () => {
@@ -109,6 +110,45 @@ const StockDetail = () => {
         } finally {
             setLoadingNews(false);
         }
+    };
+
+    // 渲染公司头部的辅助函数
+    const renderCompanyHeader = () => {
+        if (loadingCompanyInfo) {
+            return (
+                <div className="company-header-loading">
+                    <div className="logo-placeholder"></div>
+                    <div className="company-details">
+                        <h3>Loading company info...</h3>
+                        <span className="symbol">Symbol: {symbol}</span>
+                    </div>
+                </div>
+            );
+        }
+
+        const logoSrc = companyInfo?.logo || stockDetail?.logo || `https://via.placeholder.com/80x80/667eea/ffffff?text=${symbol}`;
+        const companyName = companyInfo?.name || symbol;
+        const companySymbol = companyInfo?.symbol || symbol;
+
+        return (
+            <div className="company-header">
+                <img
+                    src={logoSrc}
+                    alt={`${companyName} logo`}
+                    className="company-logo"
+                    onError={(e) => {
+                        e.target.src = `https://via.placeholder.com/80x80/667eea/ffffff?text=${symbol}`;
+                    }}
+                />
+                <div className="company-details">
+                    <h3>{companyName}</h3>
+                    <span className="symbol">Symbol: {companySymbol}</span>
+                    <span className="sector">Sector: {companyInfo?.sector || 'N/A'}</span>
+                    <span className="industry">Industry: {companyInfo?.industry || 'N/A'}</span>
+                    <span className="exchange">Exchange: {companyInfo?.basicInfo?.exchange || 'N/A'}</span>
+                </div>
+            </div>
+        );
     };
 
     if (loadingStock) {
@@ -232,29 +272,16 @@ const StockDetail = () => {
                 <div className="right-panel">
                     
                     <div className="actions-section">
-                                                    <div className="company-header">
-                                <img
-                                    src={companyInfo.logo}
-                                    alt={`${companyInfo.name} logo`}
-                                    className="company-logo"
-                                    onError={(e) => {
-                                        e.target.src = `https://via.placeholder.com/80x80/667eea/ffffff?text=${companyInfo.symbol}`;
-                                    }}
-                                />
-                                <div className="company-details">
-                                    <h3>{companyInfo.name}</h3>
-                                    <span className="symbol">Symbol: {companyInfo.symbol}</span>
-                                    <span className="sector">Sector: {companyInfo.sector || 'N/A'}</span>
-                                    <span className="industry">Industry: {companyInfo.industry || 'N/A'}</span>
-                                    <span className="exchange">Exchange: {companyInfo.basicInfo?.exchange || 'N/A'}</span>
-                                </div>
-                            </div>
-                            
-
+                        <CompanyHeader 
+                            companyInfo={companyInfo}
+                            stockDetail={stockDetail}
+                            symbol={symbol}
+                            loading={loadingCompanyInfo}
+                        />
+                        
                         <button className="action-btn buy-btn" onClick={() => setShowBuyModal(true)}>
                             <span className="btn-icon">💰</span> Buy Stock
                         </button>
-
                     </div>
                                     {/* 公司新闻 */}
                 <div className="news-section">
