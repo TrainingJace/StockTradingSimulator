@@ -17,6 +17,8 @@ const StockDetail = () => {
     const [loadingStock, setLoadingStock] = useState(true);
     const [showBuyModal, setShowBuyModal] = useState(false);
     const [userSimulationDate, setUserSimulationDate] = useState(null);
+    const [companyInfo, setCompanyInfo] = useState(null);
+    const [loadingCompanyInfo, setLoadingCompanyInfo] = useState(true);
     const [chartData, setChartData] = useState({
         daily: null,
         weekly: null,
@@ -99,6 +101,7 @@ const StockDetail = () => {
         if (symbol) {
             fetchUserData();
             fetchStockData(symbol);
+            fetchCompanyInfo(symbol);
             // 页面加载时获取所有时间范围的数据
             fetchAllChartData(symbol);
         }
@@ -140,10 +143,18 @@ const StockDetail = () => {
             // stockApi会自动从localStorage获取用户的simulation_date
             const response = await stockApi.getStocks();
 
+            console.log('=== 后端返回的完整stocks数据 ===');
+            console.log('Response success:', response.success);
+            console.log('Response data length:', response.data ? response.data.length : 0);
+            console.log('Complete stocks data:', JSON.stringify(response.data, null, 2));
+            console.log('====================================');
+
             if (response.success && response.data) {
                 const foundStock = response.data.find(s => s.symbol === stockSymbol);
                 if (foundStock) {
-                    console.log('Found stock data:', foundStock); // 调试信息
+                    console.log('=== 当前股票详细数据 ===');
+                    console.log('Found stock data:', JSON.stringify(foundStock, null, 2));
+                    console.log('========================');
                     setStock(foundStock);
                     // 创建基本的股票详情对象，不依赖模拟数据
                     const detail = {
@@ -159,6 +170,32 @@ const StockDetail = () => {
             console.error('Failed to fetch stock data:', error);
         } finally {
             setLoadingStock(false);
+        }
+    };
+
+    const fetchCompanyInfo = async (stockSymbol) => {
+        try {
+            setLoadingCompanyInfo(true);
+            console.log(`=== Frontend: Fetching company info for ${stockSymbol} ===`);
+
+            const response = await stockApi.getCompanyInfo(stockSymbol);
+
+            console.log('=== Company Info API Response ===');
+            console.log('Response success:', response.success);
+            console.log('Company info data:', JSON.stringify(response.data, null, 2));
+            console.log('=================================');
+
+            if (response.success && response.data) {
+                setCompanyInfo(response.data);
+            } else {
+                console.error('Failed to fetch company info:', response.error);
+                setCompanyInfo(null);
+            }
+        } catch (error) {
+            console.error('Error fetching company info:', error);
+            setCompanyInfo(null);
+        } finally {
+            setLoadingCompanyInfo(false);
         }
     };
 
@@ -777,99 +814,117 @@ Volume: ${data.volume.toLocaleString()}`;
                 <div className="right-panel">
                     {/* 公司Logo和简介 */}
                     <div className="company-info-section">
-                        <div className="company-header">
-                            <img
-                                src={stockDetail.logo}
-                                alt={`${stock.name} logo`}
-                                className="company-logo"
-                                onError={(e) => {
-                                    e.target.src = `https://via.placeholder.com/80x80/667eea/ffffff?text=${stock.symbol}`;
-                                }}
-                            />
-                            <div className="company-details">
-                                <h3>{stock.name}</h3>
-                                <span className="symbol">Symbol: {stock.symbol}</span>
-                                <span className="sector">Sector: {stock.sector || 'N/A'}</span>
-                                <span className="exchange">Exchange: {stock.exchange || 'N/A'}</span>
+                        {loadingCompanyInfo ? (
+                            <div className="company-loading">
+                                <p>Loading company information...</p>
                             </div>
-                        </div>
-                        <div className="company-description">
-                            <p>{stock.description}</p>
-                        </div>
+                        ) : companyInfo ? (
+                            <>
+                                <div className="company-header">
+                                    <img
+                                        src={companyInfo.logo}
+                                        alt={`${companyInfo.name} logo`}
+                                        className="company-logo"
+                                        onError={(e) => {
+                                            e.target.src = `https://via.placeholder.com/80x80/667eea/ffffff?text=${companyInfo.symbol}`;
+                                        }}
+                                    />
+                                    <div className="company-details">
+                                        <h3>{companyInfo.name}</h3>
+                                        <span className="symbol">Symbol: {companyInfo.symbol}</span>
+                                        <span className="sector">Sector: {companyInfo.sector || 'N/A'}</span>
+                                        <span className="industry">Industry: {companyInfo.industry || 'N/A'}</span>
+                                        <span className="exchange">Exchange: {companyInfo.basicInfo?.exchange || 'N/A'}</span>
+                                    </div>
+                                </div>
+                                <div className="company-description">
+                                    <p>{companyInfo.description || 'No description available.'}</p>
+                                </div>
 
-                        {/* 基本信息 */}
-                        <div className="basic-info">
-                            <h4>Basic Information</h4>
-                            <div className="info-grid">
-                                <div className="info-item">
-                                    <span className="info-label">CIK</span>
-                                    <span className="info-value">{stock.cik || 'N/A'}</span>
+                                {/* 基本信息 */}
+                                <div className="basic-info">
+                                    <h4>Basic Information</h4>
+                                    <div className="info-grid">
+                                        <div className="info-item">
+                                            <span className="info-label">CIK</span>
+                                            <span className="info-value">{companyInfo.basicInfo?.cik || 'N/A'}</span>
+                                        </div>
+                                        <div className="info-item">
+                                            <span className="info-label">Currency</span>
+                                            <span className="info-value">{companyInfo.basicInfo?.currency || 'N/A'}</span>
+                                        </div>
+                                        <div className="info-item">
+                                            <span className="info-label">Country</span>
+                                            <span className="info-value">{companyInfo.basicInfo?.country || 'N/A'}</span>
+                                        </div>
+                                        <div className="info-item">
+                                            <span className="info-label">Address</span>
+                                            <span className="info-value">{companyInfo.basicInfo?.address || 'N/A'}</span>
+                                        </div>
+                                        <div className="info-item">
+                                            <span className="info-label">Official Website</span>
+                                            <span className="info-value">
+                                                {companyInfo.basicInfo?.officialSite ? (
+                                                    <a href={companyInfo.basicInfo.officialSite} target="_blank" rel="noopener noreferrer">
+                                                        Visit Website
+                                                    </a>
+                                                ) : 'N/A'}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="info-item">
-                                    <span className="info-label">Currency</span>
-                                    <span className="info-value">{stock.currency || 'N/A'}</span>
-                                </div>
-                                <div className="info-item">
-                                    <span className="info-label">Country</span>
-                                    <span className="info-value">{stock.country || 'N/A'}</span>
-                                </div>
-                                <div className="info-item">
-                                    <span className="info-label">Address</span>
-                                    <span className="info-value">{stock.address || 'N/A'}</span>
-                                </div>
-                                <div className="info-item">
-                                    <span className="info-label">Official Website</span>
-                                    <span className="info-value">
-                                        {stock.officialSite ? (
-                                            <a href={stock.officialSite} target="_blank" rel="noopener noreferrer">
-                                                Visit Website
-                                            </a>
-                                        ) : 'N/A'}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
 
-                        {/* 财务指标 */}
-                        <div className="financial-metrics">
-                            <h4>Financial Metrics</h4>
-                            <div className="metrics-grid">
-                                <div className="metric">
-                                    <span className="metric-label">Market Cap</span>
-                                    <span className="metric-value">
-                                        {stock.marketCapitalization ?
-                                            `$${(parseFloat(stock.marketCapitalization) / 1000000000).toFixed(1)}B` :
-                                            (stock.marketCap ? `$${(stock.marketCap / 1000000000).toFixed(1)}B` : 'N/A')
-                                        }
-                                    </span>
+                                {/* 财务指标 */}
+                                <div className="financial-metrics">
+                                    <h4>Financial Metrics</h4>
+                                    <div className="metrics-grid">
+                                        <div className="metric">
+                                            <span className="metric-label">Market Cap</span>
+                                            <span className="metric-value">
+                                                {companyInfo.financialMetrics?.marketCapitalization ?
+                                                    `$${(parseFloat(companyInfo.financialMetrics.marketCapitalization) / 1000000000).toFixed(1)}B` :
+                                                    'N/A'
+                                                }
+                                            </span>
+                                        </div>
+                                        <div className="metric">
+                                            <span className="metric-label">EBITDA</span>
+                                            <span className="metric-value">
+                                                {companyInfo.financialMetrics?.ebitda ?
+                                                    `$${(parseFloat(companyInfo.financialMetrics.ebitda) / 1000000000).toFixed(1)}B` :
+                                                    'N/A'
+                                                }
+                                            </span>
+                                        </div>
+                                        <div className="metric">
+                                            <span className="metric-label">PE Ratio</span>
+                                            <span className="metric-value">{companyInfo.financialMetrics?.peRatio || 'N/A'}</span>
+                                        </div>
+                                        <div className="metric">
+                                            <span className="metric-label">PEG Ratio</span>
+                                            <span className="metric-value">{companyInfo.financialMetrics?.pegRatio || 'N/A'}</span>
+                                        </div>
+                                        <div className="metric">
+                                            <span className="metric-label">Book Value</span>
+                                            <span className="metric-value">
+                                                {companyInfo.financialMetrics?.bookValue ?
+                                                    `$${companyInfo.financialMetrics.bookValue}` : 'N/A'}
+                                            </span>
+                                        </div>
+                                        <div className="metric">
+                                            <span className="metric-label">Volume</span>
+                                            <span className="metric-value">
+                                                {stock?.volume ? `${(stock.volume / 1000000).toFixed(1)}M` : 'N/A'}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="metric">
-                                    <span className="metric-label">EBITDA</span>
-                                    <span className="metric-value">
-                                        {stock.ebitda ?
-                                            `$${(parseFloat(stock.ebitda) / 1000000000).toFixed(1)}B` :
-                                            'N/A'
-                                        }
-                                    </span>
-                                </div>
-                                <div className="metric">
-                                    <span className="metric-label">PE Ratio</span>
-                                    <span className="metric-value">{stock.peRatio || 'N/A'}</span>
-                                </div>
-                                <div className="metric">
-                                    <span className="metric-label">PEG Ratio</span>
-                                    <span className="metric-value">{stock.pegRatio || 'N/A'}</span>
-                                </div>
-                                <div className="metric">
-                                    <span className="metric-label">Book Value</span>
-                                    <span className="metric-value">{stock.bookValue ? `$${stock.bookValue}` : 'N/A'}</span>
-                                </div>
-                                <div className="metric">
-                                    <span className="metric-label">Volume</span>
-                                    <span className="metric-value">{(stock.volume / 1000000).toFixed(1)}M</span>
-                                </div>
+                            </>
+                        ) : (
+                            <div className="company-error">
+                                <p>Failed to load company information</p>
                             </div>
-                        </div>
+                        )}
                     </div>
 
                     {/* 操作按钮 */}
