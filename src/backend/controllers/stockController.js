@@ -5,13 +5,13 @@ class StockController {
     try {
       const { symbol } = req.params;
       const { simulation_date } = req.query;
-      
+
       if (!symbol) {
         return res.status(400).json({ error: 'Stock symbol is required' });
       }
 
-      const stock = await services.stockService.getRealTimePrice(symbol);
-      
+      const stock = await services.stockService.getStock(symbol);
+
       if (!stock) {
         return res.status(404).json({ error: 'Stock not found' });
       }
@@ -26,7 +26,7 @@ class StockController {
   async getMultipleStocks(req, res) {
     try {
       const { symbols, simulation_date } = req.query;
-      
+
       let symbolArray = [];
       if (symbols) {
         symbolArray = symbols.split(',').map(s => s.trim());
@@ -110,11 +110,11 @@ class StockController {
   async subscribeToStock(req, res) {
     try {
       const { symbol } = req.params;
-      
+
       // 这里可以实现 WebSocket 订阅逻辑
-      res.json({ 
-        success: true, 
-        message: `Subscribed to real-time updates for ${symbol}` 
+      res.json({
+        success: true,
+        message: `Subscribed to real-time updates for ${symbol}`
       });
     } catch (error) {
       console.error('Error in subscribeToStock:', error);
@@ -125,15 +125,15 @@ class StockController {
   // 手动初始化历史数据
   async initializeHistoryData(req, res) {
     try {
-      
+
       // 延迟加载，避免循环依赖
       const { testStocks, initializeStockHistory } = require('../database/seed-data');
       const database = require('../database/database');
-      
+
       const results = await initializeStockHistory(database);
-      
-      res.json({ 
-        success: true, 
+
+      res.json({
+        success: true,
         message: '历史数据初始化完成',
         data: results || {
           total: testStocks.length,
@@ -141,10 +141,10 @@ class StockController {
         }
       });
     } catch (error) {
-      res.status(500).json({ 
+      res.status(500).json({
         success: false,
         error: 'Failed to initialize history data',
-        message: error.message 
+        message: error.message
       });
     }
   }
@@ -154,19 +154,19 @@ class StockController {
     try {
       const stockHistoryService = require('../services/stockHistoryService');
       const { testStocks } = require('../database/seed-data');
-      
+
       const startDate = '2020-01-01';
       const endDate = '2025-01-01';
-      
+
       const status = [];
-      
+
       for (const stock of testStocks) {
         const hasData = await stockHistoryService.checkHistoryDataExists(
-          stock.symbol, 
-          startDate, 
+          stock.symbol,
+          startDate,
           endDate
         );
-        
+
         const query = `
           SELECT COUNT(*) as count, MIN(date) as earliest, MAX(date) as latest
           FROM stock_history 
@@ -174,7 +174,7 @@ class StockController {
         `;
         const result = await stockHistoryService.db.execute(query, [stock.symbol]);
         const dbInfo = result[0];
-        
+
         status.push({
           symbol: stock.symbol,
           name: stock.name,
@@ -186,7 +186,7 @@ class StockController {
           }
         });
       }
-      
+
       res.json({
         success: true,
         message: '历史数据状态检查完成',
@@ -197,10 +197,48 @@ class StockController {
       });
     } catch (error) {
       console.error('Error in checkHistoryDataStatus:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         success: false,
         error: 'Failed to check history data status',
-        message: error.message 
+        message: error.message
+      });
+    }
+  }
+
+  async getCompanyInfo(req, res) {
+    try {
+      const { symbol } = req.params;
+
+      if (!symbol) {
+        return res.status(400).json({
+          success: false,
+          error: 'Stock symbol is required'
+        });
+      }
+
+      console.log(`=== Getting company info for ${symbol} ===`);
+
+      const companyInfo = await services.stockService.getCompanyInfo(symbol);
+
+      if (!companyInfo) {
+        return res.status(404).json({
+          success: false,
+          error: 'Company information not found'
+        });
+      }
+
+      console.log('Company info retrieved:', companyInfo);
+
+      res.json({
+        success: true,
+        data: companyInfo
+      });
+    } catch (error) {
+      console.error('Error in getCompanyInfo:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        message: error.message
       });
     }
   }

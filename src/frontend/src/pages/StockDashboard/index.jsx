@@ -3,12 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { useSearchableData } from '../../hooks'
 import { stockApi, watchlistApi } from '../../api'
 import { formatPrice, formatPercentage, getPriceChangeColor, formatNumber, getErrorMessage } from '../../utils/formatters'
-import StockDetailModal from '../../components/StockDetailModal'
 import './StockDashboard.css'
 
 function StockDashboard() {
-  const [selectedStock, setSelectedStock] = useState(null)
-  const [showDetailModal, setShowDetailModal] = useState(false)
   const [searchResults, setSearchResults] = useState([])
   const [searchLoading, setSearchLoading] = useState(false)
   const [searchError, setSearchError] = useState(null)
@@ -129,11 +126,6 @@ function StockDashboard() {
     navigate(`/stock/${stock.symbol}`);
   };
 
-  const handleCloseModal = () => {
-    setShowDetailModal(false);
-    setSelectedStock(null);
-  };
-
   const handleClearSearch = () => {
     setSearchTerm('')
     setSearchResults([])
@@ -233,8 +225,7 @@ function StockDashboard() {
 
               <div
                 key={stock.symbol}
-
-                className={`stock-card ${selectedStock?.symbol === stock.symbol ? 'selected' : ''}`}
+                className="stock-card"
                 onClick={() => handleStockSelect(stock)}
               >
                 <div className="stock-header">
@@ -278,13 +269,6 @@ function StockDashboard() {
           )}
         </div>
       )}
-
-      {/* 股票详情模态框 */}
-      <StockDetailModal
-        stock={selectedStock}
-        isOpen={showDetailModal}
-        onClose={handleCloseModal}
-      />
 
       <footer className="dashboard-footer">
         <p>Data updated: {new Date().toLocaleString()}</p>

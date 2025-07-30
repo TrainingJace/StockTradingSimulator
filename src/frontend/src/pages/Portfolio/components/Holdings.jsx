@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, ResponsiveContainer, Legend, Scatter } from 'recharts'
 import { formatPrice, formatPercentage } from '../../../utils/formatters'
 import BuyStockModal from '../../../components/BuyStockModal'
 import SellStockModal from '../../../components/SellStockModal'
+import StockChart from '../../../components/StockChart'
 import { tradingApi } from '../../../api/tradingApi'
 import { stockApi } from '../../../api/stockApi'
 
@@ -95,48 +95,6 @@ function Holdings({ portfolio, onTransactionSuccess }) {
     }
   }
 
-  // 自定义 Tooltip 内容
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      const date = new Date(label);
-      const dateStr = `${date.getMonth()+1}/${date.getDate()}/${date.getFullYear()}`;
-      
-      return (
-        <div style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.95)',
-          border: '1px solid #ccc',
-          borderRadius: 6,
-          padding: 8,
-          fontSize: 11,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
-        }}>
-          <div style={{ fontWeight: 'bold', marginBottom: 4, color: '#333' }}>
-            {dateStr}
-          </div>
-          <div style={{ color: '#1976d2', marginBottom: 2 }}>
-            Price: ${data.price}
-          </div>
-          <div style={{ color: '#888', marginBottom: 2 }}>
-            Avg Cost: ${data.avgCost}
-          </div>
-          {data.action && (
-            <div style={{ 
-              color: data.action === 'buy' ? '#43a047' : '#e53935',
-              fontWeight: 'bold'
-            }}>
-              {data.action === 'buy' 
-                ? `📈 Buy ${data.shares} shares` 
-                : `📉 Sell ${data.shares} shares`
-              }
-            </div>
-          )}
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
     <>
       <div className="holdings-section">
@@ -209,110 +167,11 @@ function Holdings({ portfolio, onTransactionSuccess }) {
                         width: '100%'
                       }}>
                         <div style={{ width: '90%', maxWidth: 900, minWidth: 400 }}>
-                          {loadingChart[position.symbol] ? (
-                            <div style={{ 
-                              height: 320, 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              justifyContent: 'center',
-                              fontSize: 16,
-                              color: '#666'
-                            }}>
-                              Loading chart data...
-                            </div>
-                          ) : chartData[position.symbol] && chartData[position.symbol].length > 0 ? (
-                            <ResponsiveContainer width="100%" height={320}>
-                              <LineChart data={chartData[position.symbol]} margin={{ left: 24, right: 24, top: 24, bottom: 16 }}>
-                                <XAxis 
-                                  type="number"
-                                  dataKey="date"
-                                  domain={['dataMin', 'dataMax']}
-                                  allowDataOverflow={false}
-                                  tick={{ fontSize: 12 }}
-                                  interval="preserveStartEnd"
-                                  angle={-45}
-                                  textAnchor="end"
-                                  height={60}
-                                  scale="time"
-                                  tickFormatter={ts => {
-                                    const d = new Date(ts);
-                                    return `${d.getMonth()+1}/${d.getDate()}`;
-                                  }}
-                                />
-                                <YAxis 
-                                  domain={[
-                                    dataMin => Math.floor(dataMin * 0.98), 
-                                    dataMax => Math.ceil(dataMax * 1.02)
-                                  ]} 
-                                  tick={{ fontSize: 14 }} 
-                                />
-                                <Tooltip 
-                                  content={<CustomTooltip />}
-                                  cursor={{ stroke: '#666', strokeDasharray: '4 4', strokeWidth: 1 }}
-                                  shared={true}
-                                  allowEscapeViewBox={{ x: true, y: true }}
-                                />
-                                <Legend />
-                                {/* 股票价格主线 */}
-                                <Line 
-                                  type="linear" 
-                                  dataKey="price" 
-                                  stroke="#1976d2" 
-                                  strokeWidth={2.5} 
-                                  dot={false}
-                                  name="Price"
-                                />
-                                {/* 平均成本虚线 */}
-                                <Line 
-                                  type="linear" 
-                                  dataKey="avgCost" 
-                                  stroke="#888" 
-                                  strokeDasharray="4 4" 
-                                  dot={false}
-                                  name="Avg Cost" 
-                                />
-                                {/* 隐形的全数据点Scatter，用于触发Tooltip */}
-                                <Scatter 
-                                  data={chartData[position.symbol]}
-                                  fill="transparent"
-                                  shape="circle"
-                                  dataKey="price"
-                                  name=""
-                                />
-                                {/* 买入点 */}
-                                <Scatter 
-                                  data={chartData[position.symbol].filter(d=>d.action==='buy')}
-                                  name="Buy"
-                                  fill="#43a047"
-                                  shape="circle"
-                                  dataKey="price"
-                                />
-                                {/* 卖出点 */}
-                                <Scatter 
-                                  data={chartData[position.symbol].filter(d=>d.action==='sell')}
-                                  name="Sell"
-                                  fill="#e53935"
-                                  shape="circle"
-                                  dataKey="price"
-                                />
-                              </LineChart>
-                            </ResponsiveContainer>
-                          ) : (
-                            <div style={{ 
-                              height: 320, 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              justifyContent: 'center',
-                              fontSize: 16,
-                              color: '#999'
-                            }}>
-                              No chart data available for {position.symbol}
-                            </div>
-                          )}
-                        </div>
-                        <div style={{fontSize:14, color:'#aaa', marginTop:12}}>
-                          Legend: Blue line = Price, Gray dashed line = Avg Cost, Green dots = Buy orders, Red dots = Sell orders<br/>
-                          Hover over any point to see trading details including shares traded
+                          <StockChart 
+                            symbol={position.symbol}
+                            data={chartData[position.symbol] || []}
+                            loading={loadingChart[position.symbol]}
+                          />
                         </div>
                       </div>
                     </span>

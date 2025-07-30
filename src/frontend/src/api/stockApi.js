@@ -22,10 +22,6 @@ export const stockApi = {
       params.symbols = symbols.join(',');
     }
 
-    // 自动添加simulation_date参数
-    if (user?.simulation_date) {
-      params.simulation_date = user.simulation_date;
-    }
 
     const response = await apiClient.get('/stocks', params);
     return response; // 返回完整响应，包含 success 和 data 字段
@@ -40,7 +36,7 @@ export const stockApi = {
     // if (user?.simulation_date) {
     //   params.simulation_date = user.simulation_date;
     // }
-    
+
     const response = await apiClient.get(`/stocks/${symbol}`, params);
     return response; // 返回完整响应
   },
@@ -122,6 +118,22 @@ export const stockApi = {
   async getTopMovers() {
     const response = await apiClient.get('/stocks/market/movers');
     return response; // 返回完整响应
+  },
+
+  // 获取公司基本信息
+  async getCompanyInfo(symbol) {
+    try {
+      console.log(`=== Frontend: Getting company info for ${symbol} ===`);
+      const response = await apiClient.get(`/stocks/company-info/${symbol}`);
+      console.log('Company info API response:', response);
+      return response; // 返回完整响应
+    } catch (error) {
+      console.error('Error getting company info:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
   },
 
   // 订阅股票实时更新

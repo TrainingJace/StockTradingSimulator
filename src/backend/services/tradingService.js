@@ -1,3 +1,6 @@
+const { getYesterdayDate } = require('../utils/dateTime');
+
+require('../utils/dateTime');
 // 交易服务实现
 class TradingService {
   constructor() {
@@ -25,7 +28,7 @@ class TradingService {
       // 3. 获取用户的模拟日期
       // const simulationDate = await this.authService.getSimulationDate(userId);
       if(simulationDate === null) {
-        simulationDate = new Date().toISOString().split('T')[0]; // 返回当前
+        simulationDate = getYesterdayDate();
       }
       // 4. 检查股票是否存在
       const [stockRows] = await connection.execute(
@@ -187,7 +190,8 @@ class TradingService {
       this.validateTradeParams(symbol, shares, price);
 
       if(simulationDate === null) {
-        simulationDate = new Date().toISOString().split('T')[0]; // 返回当前
+        // simulationDate = new Date().toISOString().split('T')[0]; // 返回当前
+        simulationDate = getYesterdayDate();
       }
       // 3. 获取用户的模拟日期
       // const simulationDate = await this.authService.getSimulationDate(userId);
