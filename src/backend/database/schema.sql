@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS stock_real_history (
     high_price DECIMAL(10, 2) NOT NULL,
     low_price DECIMAL(10, 2) NOT NULL,
     close_price DECIMAL(10, 2) NOT NULL,
-    change_price       DECIMAL(10, 2) NOT NULL,
+    change_price DECIMAL(10, 2) NOT NULL,
     change_percent DECIMAL(5, 2) NOT NULL,
     volume BIGINT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -118,8 +118,9 @@ CREATE TABLE IF NOT EXISTS news (
     summary TEXT,
     content TEXT,
     source VARCHAR(100),
-    sentiment_score DECIMAL(3, 2), -- -1.00 to 1.00
+    sentiment_score DECIMAL(3, 2),
     published_date DATE NOT NULL,
+    url VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_symbol_date (symbol, published_date)
 ) ENGINE = InnoDB;
