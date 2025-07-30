@@ -61,7 +61,7 @@ class Database {
       await this.createTables();
 
       // 自动插入种子股票数据
-      // await insertTestStocks(this);
+      await insertTestStocks(this);
       // 自动插入jason_test测试投资组合
       // await require('./seed-data').insertTestPortfolio(this);
     } catch (error) {

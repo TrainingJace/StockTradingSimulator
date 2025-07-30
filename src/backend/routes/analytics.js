@@ -23,6 +23,8 @@ router.get('/benchmark', analyticsController.getBenchmarkComparison);
 
 // 新增：分析摘要接口，返回结构化数据给前端 Analysis.jsx
 router.get('/summary', async (req, res) => {
+  return;
+  console.log('Fetching portfolio analytics summary...');
   try {
     // 假设已通过认证中间件拿到 req.user.id
     const userId = req.user.id;
@@ -37,13 +39,24 @@ router.get('/summary', async (req, res) => {
     dailyReturns.reverse(); // 按时间升序
 
     // 查询持仓
-    const positions = await db.execute('SELECT symbol, current_value, unrealized_gain_percent FROM positions WHERE portfolio_id = ?', [portfolio.id]);
+    const [positions] = await db.execute('SELECT symbol, current_value, unrealized_gain_percent FROM positions WHERE portfolio_id = ?', [portfolio.id]);
+
     // 资产分布
-    const totalValue = portfolio.total_value;
-    const assetDistribution = positions.map(p => ({
-      symbol: p.symbol,
-      percent: totalValue ? ((p.current_value / totalValue) * 100).toFixed(2) : 0
-    }));
+    const totalValue = Number(portfolio.total_value) || 0;
+    const assetDistribution = positions.map(p => {
+    console.log(`Current value : ${p.current_value} , totalValue: ${totalValue}`);
+      const currentValue = Number(p.current_value) || 0;
+      let percent = 0;
+      if (totalValue > 0) {
+        percent = ((currentValue / totalValue) * 100).toFixed(2);
+      }
+      return {
+        symbol: p.symbol,
+        value: currentValue,
+        percent: isNaN(percent) ? 0 : percent
+      };
+    });
+
     // Top/Worst performers
     const sorted = [...positions].sort((a, b) => b.unrealized_gain_percent - a.unrealized_gain_percent);
     const topPerformers = sorted.slice(0, 3).map(p => ({ symbol: p.symbol, change: Number(p.unrealized_gain_percent) }));

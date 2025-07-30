@@ -63,11 +63,23 @@ exports.getPortfolioAnalytics = async (req, res) => {
     const returnPercentageResult = await db.execute(`SELECT AVG(total_return_percent) AS returnPercentage FROM portfolios WHERE id IN (${portfolioIds.join(',')})`);
     // 资产分布：positions表各symbol市值占比并计算percent
     const assetRows = await db.execute(`SELECT symbol, SUM(shares * avg_cost) AS value FROM positions WHERE portfolio_id IN (${portfolioIds.join(',')}) GROUP BY symbol`);
-    const totalAssets = assetRows.reduce((sum, r) => sum + (r.value || 0), 0);
-    const assetDistributionResult = assetRows.map(r => ({ ...r, percent: totalAssets ? (r.value / totalAssets * 100).toFixed(2) : 0 }));
-    // 表现最好/最差：positions表市值变化（此处用市值排序）
-    const topPerformersResult = [...assetRows].sort((a, b) => b.value - a.value).slice(0, 3);
-    const worstPerformersResult = [...assetRows].sort((a, b) => a.value - b.value).slice(0, 3);
+    const totalAssets = assetRows.reduce((sum, r) => sum + Number(r.value) || 0, 0);
+    const assetDistributionResult = assetRows.map(r => ({
+      ...r,
+      value: Number(r.value) || 0,
+      percent: totalAssets ? ((Number(r.value) || 0) / totalAssets * 100).toFixed(2) : 0
+    }));
+
+    // 表现最好/最差
+    const topPerformersResult = [...assetRows]
+      .sort((a, b) => Number(b.value) - Number(a.value))
+      .slice(0, 3)
+      .map(r => ({ symbol: r.symbol, change: Number(r.value) || 0 }));
+
+    const worstPerformersResult = [...assetRows]
+      .sort((a, b) => Number(a.value) - Number(b.value))
+      .slice(0, 3)
+      .map(r => ({ symbol: r.symbol, change: Number(r.value) || 0 }));
     // 每日资产变化：portfolio_history表，支持区间
     let dailySql = `SELECT date, total_value FROM portfolio_history WHERE portfolio_id IN (${portfolioIds.join(',')})`;
     let dailyParams = [];
