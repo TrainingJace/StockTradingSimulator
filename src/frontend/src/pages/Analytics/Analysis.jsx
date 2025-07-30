@@ -86,10 +86,10 @@ const Analysis = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer 45f22677-b471-4784-a35b-cb902b0d62de" // 请换成你自己的 Token
+          "Authorization": "Bearer 10da0b38-73d5-4901-9b66-cfa4a3b650b8" // 请换成你自己的 Token
         },
         body: JSON.stringify({
-          model: "doubao-seed-1-6-250615",
+          model: "kimi-k2-250711",
           messages: [
             {
               role: "user",
