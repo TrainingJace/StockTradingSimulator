@@ -49,7 +49,7 @@ function Navigation() {
     <nav className="navigation">
       <div className="nav-container">
         <Link to="/" className="nav-logo">
-          📈 Stock Simulator
+          📈 Stock Pilot
         </Link>
         
         <ul className="nav-menu">
