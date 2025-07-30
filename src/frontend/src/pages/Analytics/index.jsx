@@ -18,7 +18,6 @@ const ChartErrorBoundary = ({ children }) => {
 };
 
 const Analytics = () => {
-  const [settling, setSettling] = useState(false);
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedRange, setSelectedRange] = useState('week');
@@ -99,14 +98,7 @@ const Analytics = () => {
       <header style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
         <h1 style={{ fontSize: '2.8rem', margin: 0, color: '#223A5F', letterSpacing: '1.5px', fontWeight: 800 }}>Portfolio Analytics</h1>
         <p style={{ color: '#6C7A89', fontSize: '1.18rem', fontWeight: 500, marginTop: '0.5rem' }}>Track your investment performance and get smart insights</p>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1.5rem', marginTop: '2rem', marginBottom: '1.5rem' }}>
-          <button
-            onClick={() => {}}
-            disabled={settling}
-            style={{ padding: '10px 32px', fontSize: '1.08rem', borderRadius: '12px', background: settling ? '#B4BCC2' : '#223A5F', color: '#fff', border: 'none', fontWeight: 600, boxShadow: '0 2px 8px rgba(34,58,95,0.10)', cursor: settling ? 'not-allowed' : 'pointer', transition: 'background 0.2s', minWidth: '160px' }}
-          >
-            {settling ? 'Settling...' : 'Daily Settlement'}
-          </button>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '2rem', marginBottom: '1.5rem' }}>
           <select
             value={selectedRange}
             onChange={e => setSelectedRange(e.target.value)}
@@ -131,54 +123,42 @@ const Analytics = () => {
         </div>
       </header>
 
-      {/* 总资产/收益/收益率 */}
-      <section style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '2rem' }}>
-        {['totalValue', 'totalReturn', 'returnPercentage'].map((key) => {
-          const isProfit = analyticsData[key] > 0;
-          const isLoss = analyticsData[key] < 0;
-          const isColoredKey = key === 'totalReturn' || key === 'returnPercentage';
-          const colorStyle = isColoredKey
-            ? { color: isProfit ? 'green' : isLoss ? 'red' : 'black' }
-            : {};
+      {/* 总资产统计和饼图布局在一行 */}
+      <section style={{ display: 'flex', justifyContent: 'center', gap: '2rem', marginBottom: '2.5rem' }}>
+        {/* 左侧总资产统计 */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {['totalValue', 'totalReturn', 'returnPercentage'].map((key) => {
+            const isProfit = analyticsData[key] > 0;
+            const isLoss = analyticsData[key] < 0;
+            const isColoredKey = key === 'totalReturn' || key === 'returnPercentage';
+            const colorStyle = isColoredKey
+              ? { color: isProfit ? 'green' : isLoss ? 'red' : 'black' }
+              : {};
 
-          return (
-            <div
-              key={key}
-              style={{
-                background: '#f5f5f5',
-                borderRadius: '12px',
-                padding: '1rem 2rem',
-                minWidth: '200px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-              }}
-            >
-              <h4 style={{ margin: 0 }}>
-                {key === 'totalValue'
-                  ? 'Total Assets'
-                  : key === 'totalReturn'
-                    ? 'Total Return'
-                    : 'Return Rate'}
-              </h4>
-              <p
+            return (
+              <div
+                key={key}
                 style={{
-                  fontSize: '1.5rem',
-                  fontWeight: 600,
-                  margin: 0,
-                  ...colorStyle
+                  background: '#fff',
+                  borderRadius: '12px',
+                  padding: '1rem 1.5rem',
+                  width: '220px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
                 }}
               >
-                {key === 'returnPercentage'
-                  ? `${safe(analyticsData[key])}%`
-                  : `$${safe(analyticsData[key]).toLocaleString()}`}
-              </p>
-            </div>
-          );
-        })}
-      </section>
+                <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#666' }}>
+                  {key === 'totalValue' ? 'Total Assets' : key === 'totalReturn' ? 'Total Return' : 'Return Rate'}
+                </h4>
+                <p style={{ fontSize: '1.3rem', fontWeight: 600, margin: '0.5rem 0 0 0', ...colorStyle }}>
+                  {key === 'returnPercentage' ? `${safe(analyticsData[key])}%` : `$${safe(analyticsData[key]).toLocaleString()}`}
+                </p>
+              </div>
+            );
+          })}
+        </div>
 
-      {/* 饼图 */}
-      <section style={{ display: 'flex', justifyContent: 'center', marginBottom: '2.5rem' }}>
-        <div style={{ width: '440px', background: '#fff', borderRadius: '20px', boxShadow: '0 4px 16px rgba(34,58,95,0.08)', padding: '2.2rem', border: '1px solid #e5e8ed', position: 'relative', transition: 'transform 0.2s' }}>
+        {/* 中间饼图 */}
+        <div style={{ width: '440px', background: '#fff', borderRadius: '20px', boxShadow: '0 4px 16px rgba(34,58,95,0.08)', padding: '2.2rem', border: '1px solid #e5e8ed' }}>
           <ChartErrorBoundary>
             {Array.isArray(analyticsData.assetDistribution) && analyticsData.assetDistribution.length > 0 ? (
               <Pie
@@ -186,17 +166,84 @@ const Analytics = () => {
                   labels: analyticsData.assetDistribution.map(i => i.symbol),
                   datasets: [{
                     data: analyticsData.assetDistribution.map(i => Number(i.percent)),
-                    backgroundColor: ['#223A5F', '#6C7A89', '#B4BCC2', '#36A2EB', '#FF6384'],
+                    backgroundColor: [
+                      '#FF6384', // 粉红
+                      '#36A2EB', // 蓝色
+                      '#FFCE56', // 黄色
+                      '#4BC0C0', // 青色
+                      '#9966FF', // 紫色
+                      '#FF9F40', // 橙色
+                      '#7FD8BE', // 薄荷绿
+                      '#FC5185', // 玫红
+                      '#4B7BE5', // 靛蓝
+                      '#6C757D'  // 灰色
+                    ],
                     borderColor: '#fff',
                     borderWidth: 2
                   }]
                 }}
-                options={{ plugins: { legend: { position: 'bottom', labels: { color: '#222', font: { size: 15, weight: 'bold' } } } } }}
+                options={{ 
+                  plugins: { 
+                    legend: { 
+                      position: 'bottom', 
+                      labels: { 
+                        color: '#222', 
+                        font: { 
+                          size: 15, 
+                          weight: 'bold' 
+                        } 
+                      } 
+                    } 
+                  } 
+                }}
               />
             ) : (
               <div style={{ textAlign: 'center', color: '#999', marginTop: '2rem' }}>No asset distribution data</div>
             )}
           </ChartErrorBoundary>
+        </div>
+
+        {/* 右侧 Top/Worst Performers */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', minWidth: '250px' }}>
+          {/* Top Performers */}
+          <div style={{ background: '#fff', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 2px 8px rgba(34,58,95,0.08)' }}>
+            <h4 style={{ color: '#223A5F', margin: '0 0 1rem 0' }}>Top Performers</h4>
+            <ul style={{ padding: 0, margin: 0, listStyle: 'none' }}>
+              {(analyticsData.topPerformers || []).map(item => (
+                <li key={item.symbol} style={{ marginBottom: '0.8rem' }}>
+                  <div style={{ fontWeight: 600 }}>{item.symbol}</div>
+                  <div>
+                    <span style={{ color: item.change >= 0 ? 'green' : 'red', marginRight: '8px' }}>
+                      {item.change > 0 ? '+' : ''}{item.change}%
+                    </span>
+                    <span style={{ color: item.profit >= 0 ? 'green' : 'red', fontSize: '0.9rem' }}>
+                      ({item.profit > 0 ? '+' : ''}${Number(item.profit).toFixed(2)})
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+          
+          {/* Worst Performers */}
+          <div style={{ background: '#fff', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 2px 8px rgba(34,58,95,0.08)' }}>
+            <h4 style={{ color: '#223A5F', margin: '0 0 1rem 0' }}>Worst Performers</h4>
+            <ul style={{ padding: 0, margin: 0, listStyle: 'none' }}>
+              {(analyticsData.worstPerformers || []).map(item => (
+                <li key={item.symbol} style={{ marginBottom: '0.8rem' }}>
+                  <div style={{ fontWeight: 600 }}>{item.symbol}</div>
+                  <div>
+                    <span style={{ color: item.change >= 0 ? 'green' : 'red', marginRight: '8px' }}>
+                      {item.change > 0 ? '+' : ''}{item.change}%
+                    </span>
+                    <span style={{ color: item.profit >= 0 ? 'green' : 'red', fontSize: '0.9rem' }}>
+                      ({item.profit > 0 ? '+' : ''}${Number(item.profit).toFixed(2)})
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </section>
 
@@ -235,36 +282,6 @@ const Analytics = () => {
               <div style={{ textAlign: 'center', color: '#999', marginTop: '2rem' }}>No performance data</div>
             )}
           </ChartErrorBoundary>
-        </div>
-      </section>
-
-      {/* Top/Worst Performers */}
-      <section style={{ display: 'flex', justifyContent: 'center', gap: '3rem', marginBottom: '2.5rem' }}>
-        <div style={{ background: '#fff', borderRadius: '16px', padding: '1.5rem 2rem', minWidth: '220px', boxShadow: '0 2px 8px rgba(34,58,95,0.08)' }}>
-          <h4 style={{ color: '#223A5F', marginBottom: '1rem' }}>Top Performers</h4>
-          <ul style={{ padding: 0, margin: 0, listStyle: 'none' }}>
-            {(analyticsData.topPerformers || []).map(item => (
-              <li key={item.symbol} style={{ marginBottom: '0.5rem' }}>
-                <span style={{ fontWeight: 600 }}>{item.symbol}</span>
-                <span style={{ marginLeft: 8, color: item.change >= 0 ? 'green' : 'red' }}>
-                  {item.change > 0 ? '+' : ''}{item.change}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div style={{ background: '#fff', borderRadius: '16px', padding: '1.5rem 2rem', minWidth: '220px', boxShadow: '0 2px 8px rgba(34,58,95,0.08)' }}>
-          <h4 style={{ color: '#223A5F', marginBottom: '1rem' }}>Worst Performers</h4>
-          <ul style={{ padding: 0, margin: 0, listStyle: 'none' }}>
-            {(analyticsData.worstPerformers || []).map(item => (
-              <li key={item.symbol} style={{ marginBottom: '0.5rem' }}>
-                <span style={{ fontWeight: 600 }}>{item.symbol}</span>
-                <span style={{ marginLeft: 8, color: item.change >= 0 ? 'green' : 'red' }}>
-                  {item.change > 0 ? '+' : ''}{item.change}
-                </span>
-              </li>
-            ))}
-          </ul>
         </div>
       </section>
 
