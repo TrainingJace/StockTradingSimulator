@@ -17,17 +17,17 @@ class StockService {
     return null;
   }
 
-  
+
   constructor() {
     this.db = require('../database/database');
     this.API_KEY = process.env.STOCK_API_KEY;
     this.BASE_URL = 'https://api.twelvedata.com';
-    
+
     // // 设置定期清理缓存（每小时执行一次）
     // setInterval(() => {
     //   this.cleanupCache();
     // }, 60 * 60 * 1000); // 1小时
-    
+
     console.log('StockService initialized with caching enabled');
   }
   async getStock(symbol) {
@@ -129,15 +129,15 @@ class StockService {
         //     })
         //   );
         // } else {
-          console.log('Fetching real prices for all stocks');
-          return await Promise.all(
-            result.map(async (stock) => {
-              const realtimePrice = await this.getRealTimePrice(stock.symbol);
-              return realtimePrice || this.formatStockData(stock);
-            })
-          );
+        console.log('Fetching real prices for all stocks');
+        return await Promise.all(
+          result.map(async (stock) => {
+            const realtimePrice = await this.getRealTimePrice(stock.symbol);
+            return realtimePrice || this.formatStockData(stock);
+          })
+        );
         // }
-        
+
       } else {
         // 获取指定的股票
         const placeholders = symbols.map(() => '?').join(',');
@@ -191,10 +191,10 @@ class StockService {
         console.log(`Using cached data for ${symbol} from ${cachedResult[0].price_time}`);
 
         const cachedData = cachedResult[0];
-        
+
         // 计算涨跌幅（与开盘价比较）
         const change = parseFloat(cachedData.change_price);
-        const changePercent = parseFloat(cachedData.change_percent); ;
+        const changePercent = parseFloat(cachedData.change_percent);;
         return {
           symbol: symbol,
           price: parseFloat(cachedData.close_price),
@@ -226,7 +226,7 @@ class StockService {
         console.log(`Fetching data for ${symbol} from API`);
         const latestData = response.data.values[0];
         const previousData = response.data.values[1];
-        
+
         const priceData = {
           symbol: symbol,
           price: parseFloat(latestData.close),
@@ -244,13 +244,13 @@ class StockService {
           const dataToStore = response.data.values.slice(0, -1); // 去掉最后一天（最远的那一天）
           let storedCount = 0;
           let skippedCount = 0;
-          
+
           for (let i = 0; i < dataToStore.length; i++) {
             const currentData = dataToStore[i];
             const prevData = response.data.values[i + 1]; // 前一天的数据
-            
+
             const dateOnly = new Date(currentData.datetime).toISOString().split('T')[0];
-            
+
             // 先检查是否已经存在该股票该日期的数据
             const existQuery = `
               SELECT id FROM stock_real_history 
@@ -258,22 +258,22 @@ class StockService {
               LIMIT 1
             `;
             const existResult = await this.db.execute(existQuery, [symbol, dateOnly]);
-            
+
             if (existResult && existResult.length > 0) {
               skippedCount++;
               continue; // 跳过已存在的数据
             }
-            
+
             // 计算与前一天的变化
             const change = parseFloat(currentData.close) - parseFloat(prevData.close);
             const changePercent = (change / parseFloat(prevData.close)) * 100;
-            
+
             const insertQuery = `
               INSERT INTO stock_real_history 
               (symbol, price_time, open_price, high_price, low_price, close_price, volume, change_price, change_percent)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
-            
+
             await this.db.execute(insertQuery, [
               symbol,
               dateOnly,
@@ -285,10 +285,10 @@ class StockService {
               change,
               changePercent
             ]);
-            
+
             storedCount++;
           }
-          
+
           console.log(`Cached ${storedCount} new records for ${symbol}, skipped ${skippedCount} existing records`);
         } catch (cacheError) {
           console.error(`Failed to cache data for ${symbol}:`, cacheError);
@@ -318,7 +318,7 @@ class StockService {
       const historyData = await stockHistoryService.getHistoryData(symbol, startDate, endDate);
 
       // 格式化数据，确保与前端期望的格式一致
-      const result =  historyData.map(item => ({
+      const result = historyData.map(item => ({
         date: item.price_time.split(' ')[0], // 直接提取日期部分，避免时区转换
         open: parseFloat(item.open_price),
         high: parseFloat(item.high_price),
@@ -418,6 +418,77 @@ class StockService {
       marketCap: parseInt(stock.market_cap),
       lastUpdated: stock.last_updated
     };
+  }
+
+  async getCompanyInfo(symbol) {
+    try {
+      console.log(`=== StockService: Getting company info for ${symbol} ===`);
+
+      // 从数据库查询公司基本信息
+      const query = `
+        SELECT 
+          symbol,
+          name,
+          sector,
+          industry,
+          description,
+          cik,
+          currency,
+          country,
+          address,
+          officialSite,
+          marketCapitalization,
+          ebitda,
+          peRatio,
+          pegRatio,
+          bookValue,
+          exchange
+        FROM stocks 
+        WHERE symbol = ?
+      `;
+
+      const result = await this.db.execute(query, [symbol.toUpperCase()]);
+
+      if (!result || result.length === 0) {
+        console.log(`No company info found for symbol: ${symbol}`);
+        return null;
+      }
+
+      const stock = result[0];
+      console.log('Raw company data from database:', stock);
+
+      // 格式化公司信息
+      const companyInfo = {
+        symbol: stock.symbol,
+        name: stock.name,
+        sector: stock.sector,
+        industry: stock.industry,
+        description: stock.description,
+        basicInfo: {
+          cik: stock.cik,
+          currency: stock.currency,
+          country: stock.country,
+          address: stock.address,
+          officialSite: stock.officialSite,
+          exchange: stock.exchange
+        },
+        financialMetrics: {
+          marketCapitalization: stock.marketCapitalization,
+          ebitda: stock.ebitda,
+          peRatio: stock.peRatio,
+          pegRatio: stock.pegRatio,
+          bookValue: stock.bookValue
+        },
+        logo: `https://financialmodelingprep.com/image-stock/${symbol.toUpperCase()}.png`
+      };
+
+      console.log('Formatted company info:', companyInfo);
+      return companyInfo;
+
+    } catch (error) {
+      console.error('Error in getCompanyInfo:', error);
+      throw error;
+    }
   }
 }
 
