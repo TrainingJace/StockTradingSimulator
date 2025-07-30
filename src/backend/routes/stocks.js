@@ -21,8 +21,8 @@ router.get('/market/movers', stockController.getTopMovers);
 router.post('/history/initialize', stockController.initializeHistoryData);
 router.get('/history/status', stockController.checkHistoryDataStatus);
 
-// 获取单个股票价格
-router.get('/:symbol', stockController.getStockPrice);
+// 获取单个股票价格以及descrption
+router.get('/:symbol', stockController.getStock);
 
 // 获取股票历史数据
 // 使用方式: GET /api/stocks/AAPL/history?startDate=2024-01-01&endDate=2024-01-31

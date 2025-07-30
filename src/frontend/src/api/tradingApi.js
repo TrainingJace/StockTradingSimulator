@@ -69,7 +69,7 @@ class TradingApi {
       // 计算开始和结束日期
       const endDate = new Date();
      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - 14);
+      startDate.setDate(startDate.getDate() - days);
       // 并行获取股票历史价格和交易历史
       const [priceHistoryResponse, transactionHistoryResponse] = await Promise.all([
         apiClient.get(`/stocks/${symbol}/history`, {

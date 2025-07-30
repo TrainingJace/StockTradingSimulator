@@ -27,12 +27,17 @@ function Holdings({ portfolio, onTransactionSuccess }) {
     setLoadingChart(prev => ({ ...prev, [symbol]: true }));
 
     try {
-      const response = await tradingApi.getStockChartData(symbol, 90, avgCost);
+      const response = await tradingApi.getStockChartData(symbol, 30, avgCost);
       
       if (response.success) {
+        // 确保数据按时间顺序排序（从早到晚）
+        const sortedData = Array.isArray(response.data) 
+          ? response.data.sort((a, b) => new Date(a.date) - new Date(b.date))
+          : [];
+          
         setChartData(prev => ({
           ...prev,
-          [symbol]: response.data
+          [symbol]: sortedData
         }));
       } else {
         console.error('Failed to load chart data for', symbol);
@@ -95,7 +100,7 @@ function Holdings({ portfolio, onTransactionSuccess }) {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       const date = new Date(label);
-      const dateStr = `${date.getMonth()+1}/${date.getDate()}`;
+      const dateStr = `${date.getMonth()+1}/${date.getDate()}/${date.getFullYear()}`;
       
       return (
         <div style={{
@@ -228,6 +233,7 @@ function Holdings({ portfolio, onTransactionSuccess }) {
                                   angle={-45}
                                   textAnchor="end"
                                   height={60}
+                                  scale="time"
                                   tickFormatter={ts => {
                                     const d = new Date(ts);
                                     return `${d.getMonth()+1}/${d.getDate()}`;

@@ -76,6 +76,8 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
     /* margin-bottom: 20px; */
 }
 
@@ -83,6 +85,23 @@ body {
     margin: 15px;
     color: #333;
     font-size: 1.5em;
+}
+
+.chart-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 10px;
+}
+
+.chart-range {
+    font-size: 12px;
+    color: #666;
+    font-weight: 500;
+    background: rgba(102, 126, 234, 0.1);
+    padding: 4px 8px;
+    border-radius: 12px;
+    border: 1px solid rgba(102, 126, 234, 0.2);
 }
 
 .timeframe-buttons {

@@ -18,8 +18,16 @@ const StockDetail = () => {
     const [loadingStock, setLoadingStock] = useState(true);
     const [showBuyModal, setShowBuyModal] = useState(false);
     const [userSimulationDate, setUserSimulationDate] = useState(null);
-    const [chartData, setChartData] = useState(null);
-    const [loadingChart, setLoadingChart] = useState(false);
+    const [chartData, setChartData] = useState({
+        daily: null,
+        weekly: null,
+        monthly: null
+    });
+    const [loadingChart, setLoadingChart] = useState({
+        daily: false,
+        weekly: false,
+        monthly: false
+    });
 
     const currentNews = useMemo(() => {
         const newsList = stockDetail?.news || [];
@@ -28,19 +36,74 @@ const StockDetail = () => {
         return newsList[currentNewsIndex];
     }, [stockDetail?.news, currentNewsIndex]);
 
+    const currentChartData = useMemo(() => {
+        return chartData[selectedTimeframe];
+    }, [chartData, selectedTimeframe]);
+
+    const isAnyChartLoading = useMemo(() => {
+        return Object.values(loadingChart).some(loading => loading);
+    }, [loadingChart]);
+
+    // 根据时间范围格式化时间标签
+    const formatTimeLabel = (datetime, timeframe) => {
+        const date = new Date(datetime);
+        
+        switch (timeframe) {
+            case 'daily':
+                // Daily: 检查是否需要显示日期
+                // 如果数据跨越多天，显示月/日 时:分，否则只显示时:分
+                if (currentChartData && currentChartData.length > 1) {
+                    const firstDate = new Date(currentChartData[0].datetime);
+                    const lastDate = new Date(currentChartData[currentChartData.length - 1].datetime);
+                    const isSameDay = firstDate.toDateString() === lastDate.toDateString();
+                    
+                    if (!isSameDay) {
+                        // 跨天数据，显示月/日 时:分
+                        return date.toLocaleDateString('en-US', { 
+                            month: 'numeric', 
+                            day: 'numeric' 
+                        }) + ' ' + date.toLocaleTimeString('en-US', { 
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            hour12: false 
+                        });
+                    }
+                }
+                // 同一天数据，只显示时:分
+                return date.toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: false 
+                });
+            case 'weekly':
+                // Weekly: 显示月/日 时:分 格式 (如: 12/25 09:00)
+                return date.toLocaleDateString('en-US', { 
+                    month: 'numeric', 
+                    day: 'numeric' 
+                }) + ' ' + date.toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: false 
+                });
+            case 'monthly':
+                // Monthly: 显示月/日 格式 (如: 12/25)
+                return date.toLocaleDateString('en-US', { 
+                    month: 'numeric', 
+                    day: 'numeric' 
+                });
+            default:
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+    };
+
     useEffect(() => {
         if (symbol) {
             fetchUserData();
             fetchStockData(symbol);
-            fetchChartData(symbol, selectedTimeframe);
+            // 页面加载时获取所有时间范围的数据
+            fetchAllChartData(symbol);
         }
     }, [symbol]);
-
-    useEffect(() => {
-        if (symbol && selectedTimeframe) {
-            fetchChartData(symbol, selectedTimeframe);
-        }
-    }, [selectedTimeframe]);
 
     useEffect(() => {
         if (stock && stockDetail && symbol) {
@@ -194,76 +257,81 @@ const StockDetail = () => {
         }
     };
 
-    const fetchChartData = async (stockSymbol, timeframe) => {
-        try {
-            setLoadingChart(true);
-
-            // 构建API参数
-            const apiKey = '7a2f00f6984b4c24a36501313ffd15e0';
-            let url;
-
-            if (timeframe === 'daily') {
-                // Daily 使用简化的API调用格式
-                url = `https://api.twelvedata.com/time_series?symbol=${stockSymbol}&interval=1min&apikey=${apiKey}`;
-            } else {
-                // Weekly 和 Monthly 保持原有的日期范围逻辑
+    const fetchAllChartData = async (stockSymbol) => {
+        const apiKey = '7a2f00f6984b4c24a36501313ffd15e0';
+        
+        // 构建所有时间范围的API URL，使用不同的时间间隔
+        const timeframes = {
+            // Daily: 1分钟间隔，显示一天的数据
+            daily: `https://api.twelvedata.com/time_series?symbol=${stockSymbol}&interval=30min&apikey=${apiKey}`,
+            // Weekly: 1小时间隔，显示一周的数据
+            weekly: (() => {
                 const today = new Date();
-                let interval, startDate, endDate;
+                const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+                const startDate = weekAgo.toISOString().split('T')[0];
+                const endDate = today.toISOString().split('T')[0];
+                return `https://api.twelvedata.com/time_series?symbol=${stockSymbol}&interval=1h&start_date=${startDate}&end_date=${endDate}&apikey=${apiKey}`;
+            })(),
+            // Monthly: 1天间隔，显示一个月的数据
+            monthly: (() => {
+                const today = new Date();
+                const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+                const startDate = monthAgo.toISOString().split('T')[0];
+                const endDate = today.toISOString().split('T')[0];
+                return `https://api.twelvedata.com/time_series?symbol=${stockSymbol}&interval=1day&start_date=${startDate}&end_date=${endDate}&apikey=${apiKey}`;
+            })()
+        };
+
+        console.log('=== FETCHING ALL CHART DATA ===');
+        console.log('URLs:', timeframes);
+
+        // 并发获取所有时间范围的数据
+        const promises = Object.entries(timeframes).map(async ([timeframe, url]) => {
+            try {
+                setLoadingChart(prev => ({ ...prev, [timeframe]: true }));
                 
-                if (timeframe === 'weekly') {
-                    interval = '1day';
-                    const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-                    startDate = weekAgo.toISOString().split('T')[0];
-                    endDate = today.toISOString().split('T')[0];
-                } else if (timeframe === 'monthly') {
-                    interval = '1day';
-                    const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-                    startDate = monthAgo.toISOString().split('T')[0];
-                    endDate = today.toISOString().split('T')[0];
+                const response = await fetch(url);
+                const data = await response.json();
+
+                console.log(`Chart API response for ${timeframe}:`, data);
+
+                if (data.status === 'ok' && data.values && Array.isArray(data.values)) {
+                    // 处理数据，转换为K线图需要的格式
+                    const processedData = data.values.map(item => ({
+                        datetime: item.datetime,
+                        open: parseFloat(item.open),
+                        high: parseFloat(item.high),
+                        low: parseFloat(item.low),
+                        close: parseFloat(item.close),
+                        volume: parseInt(item.volume)
+                    })).reverse(); // 反转数组，使最新数据在右侧
+
+                    console.log(`Processed chart data for ${timeframe}:`, processedData);
+                    return { timeframe, data: processedData };
                 } else {
-                    // 默认使用 weekly 设置
-                    interval = '1day';
-                    const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-                    startDate = weekAgo.toISOString().split('T')[0];
-                    endDate = today.toISOString().split('T')[0];
+                    console.error(`Invalid chart data response for ${timeframe}:`, data);
+                    return { timeframe, data: [] };
                 }
-                
-                url = `https://api.twelvedata.com/time_series?symbol=${stockSymbol}&interval=${interval}&start_date=${startDate}&end_date=${endDate}&apikey=${apiKey}`;
+            } catch (error) {
+                console.error(`Error fetching chart data for ${timeframe}:`, error);
+                return { timeframe, data: [] };
+            } finally {
+                setLoadingChart(prev => ({ ...prev, [timeframe]: false }));
             }
+        });
 
-            console.log('=== FETCHING CHART DATA ===');
-            console.log('URL:', url);
-            console.log('Timeframe:', timeframe);
+        // 等待所有请求完成
+        const results = await Promise.all(promises);
 
-            const response = await fetch(url);
-            const data = await response.json();
-
-            console.log('Chart API response:', data);
-
-            if (data.status === 'ok' && data.values && Array.isArray(data.values)) {
-                // 处理数据，转换为K线图需要的格式
-                const processedData = data.values.map(item => ({
-                    datetime: item.datetime,
-                    open: parseFloat(item.open),
-                    high: parseFloat(item.high),
-                    low: parseFloat(item.low),
-                    close: parseFloat(item.close),
-                    volume: parseInt(item.volume)
-                })).reverse(); // 反转数组，使最新数据在右侧
-
-                setChartData(processedData);
-                console.log('Processed chart data:', processedData);
-            } else {
-                console.error('Invalid chart data response:', data);
-                // 如果API失败，设置空数据
-                setChartData([]);
-            }
-        } catch (error) {
-            console.error('Error fetching chart data:', error);
-            setChartData([]);
-        } finally {
-            setLoadingChart(false);
-        }
+        
+        // 更新所有时间范围的数据
+        const newChartData = {};
+        results.forEach(({ timeframe, data }) => {
+            newChartData[timeframe] = data;
+        });
+        
+        setChartData(prev => ({ ...prev, ...newChartData }));
+        console.log('All chart data fetched:', newChartData);
     };
 
     useEffect(() => {
@@ -333,6 +401,30 @@ const StockDetail = () => {
                 <div className="chart-section">
                     <div className="chart-header">
                         <h3>Price Trend</h3>
+                        {/* 显示当前时间范围信息 */}
+                        {currentChartData && currentChartData.length > 0 && (
+                            <div className="chart-info">
+                                <span className="chart-range">
+                                    {(() => {
+                                        const firstDate = new Date(currentChartData[0].datetime);
+                                        const lastDate = new Date(currentChartData[currentChartData.length - 1].datetime);
+                                        
+                                        if (selectedTimeframe === 'daily') {
+                                            const isSameDay = firstDate.toDateString() === lastDate.toDateString();
+                                            if (isSameDay) {
+                                                return `${firstDate.toLocaleDateString('en-US')} (30min intervals)`;
+                                            } else {
+                                                return `${firstDate.toLocaleDateString('en-US')} - ${lastDate.toLocaleDateString('en-US')} (30min intervals)`;
+                                            }
+                                        } else if (selectedTimeframe === 'weekly') {
+                                            return `${firstDate.toLocaleDateString('en-US')} - ${lastDate.toLocaleDateString('en-US')} (1hour intervals)`;
+                                        } else {
+                                            return `${firstDate.toLocaleDateString('en-US')} - ${lastDate.toLocaleDateString('en-US')} (1day intervals)`;
+                                        }
+                                    })()}
+                                </span>
+                            </div>
+                        )}
                         <div className="timeframe-buttons">
                             {timeframes.map((timeframe) => (
                                 <button
@@ -342,10 +434,10 @@ const StockDetail = () => {
                                         console.log('Timeframe changed to:', timeframe.key);
                                         setSelectedTimeframe(timeframe.key);
                                     }}
-                                    disabled={loadingChart}
+                                    disabled={loadingChart[timeframe.key]}
                                 >
                                     {timeframe.label}
-                                    {loadingChart && selectedTimeframe === timeframe.key && (
+                                    {loadingChart[timeframe.key] && (
                                         <span style={{ marginLeft: '5px' }}>⏳</span>
                                     )}
                                 </button>
@@ -365,11 +457,11 @@ const StockDetail = () => {
                                 </span>
                             </div>
                             <div className="simple-chart">
-                                {loadingChart ? (
+                                {loadingChart[selectedTimeframe] ? (
                                     <div className="chart-loading">
-                                        <p>Loading chart data...</p>
+                                        <p>Loading {selectedTimeframe} chart data...</p>
                                     </div>
-                                ) : chartData && chartData.length > 0 ? (
+                                ) : currentChartData && currentChartData.length > 0 ? (
                                     <svg width="100%" height="100%" viewBox="0 0 800 500" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)' }}>
                                         {/* 添加渐变定义 */}
                                         <defs>
@@ -399,7 +491,7 @@ const StockDetail = () => {
                                                 strokeDasharray="3,3"
                                             />
                                         ))}
-                                        {Array.from({ length: Math.min(chartData.length, 12) }, (_, i) => (
+                                        {Array.from({ length: Math.min(currentChartData.length, 12) }, (_, i) => (
                                             <line
                                                 key={`grid-v-${i}`}
                                                 x1={80 + i * 55}
@@ -412,9 +504,44 @@ const StockDetail = () => {
                                             />
                                         ))}
 
-                                        {chartData.map((data, index) => {
+                                        {/* Daily和Weekly模式：在日期变化处添加分隔线 */}
+                                        {(selectedTimeframe === 'daily' || selectedTimeframe === 'weekly') && currentChartData.length > 1 && (
+                                            (() => {
+                                                const separators = [];
+                                                let lastDate = '';
+                                                
+                                                currentChartData.forEach((data, index) => {
+                                                    if (index === 0) {
+                                                        lastDate = new Date(data.datetime).toDateString();
+                                                        return;
+                                                    }
+                                                    
+                                                    const currentDate = new Date(data.datetime).toDateString();
+                                                    if (currentDate !== lastDate) {
+                                                        const x = 70 + (index * (660 / (currentChartData.length - 1 || 1)));
+                                                        separators.push(
+                                                            <line
+                                                                key={`date-separator-${index}`}
+                                                                x1={x}
+                                                                y1="40"
+                                                                x2={x}
+                                                                y2="460"
+                                                                stroke={selectedTimeframe === 'daily' ? "rgba(234, 88, 12, 0.4)" : "rgba(59, 130, 246, 0.4)"}
+                                                                strokeWidth="2"
+                                                                strokeDasharray="5,5"
+                                                            />
+                                                        );
+                                                        lastDate = currentDate;
+                                                    }
+                                                });
+                                                
+                                                return separators;
+                                            })()
+                                        )}
+
+                                        {currentChartData.map((data, index) => {
                                             // 计算价格范围
-                                            const allPrices = chartData.flatMap(d => [d.high, d.low]);
+                                            const allPrices = currentChartData.flatMap(d => [d.high, d.low]);
                                             const maxPrice = Math.max(...allPrices);
                                             const minPrice = Math.min(...allPrices);
                                             const priceRange = maxPrice - minPrice;
@@ -423,7 +550,7 @@ const StockDetail = () => {
                                             const normalizedRange = priceRange || 1;
 
                                             // 计算位置
-                                            const x = 70 + (index * (660 / (chartData.length - 1 || 1)));
+                                            const x = 70 + (index * (660 / (currentChartData.length - 1 || 1)));
                                             const high = 50 + ((maxPrice - data.high) / normalizedRange) * 400;
                                             const low = 50 + ((maxPrice - data.low) / normalizedRange) * 400;
                                             const open = 50 + ((maxPrice - data.open) / normalizedRange) * 400;
@@ -473,12 +600,35 @@ const StockDetail = () => {
                                                         className="hover-area"
                                                     >
                                                         <title>
-                                                            {`${data.datetime}
+                                                            {(() => {
+                                                                const date = new Date(data.datetime);
+                                                                let formattedDate;
+                                                                
+                                                                if (selectedTimeframe === 'daily') {
+                                                                    formattedDate = date.toLocaleDateString('en-US') + ' ' + 
+                                                                                  date.toLocaleTimeString('en-US', { 
+                                                                                      hour: '2-digit', 
+                                                                                      minute: '2-digit',
+                                                                                      hour12: false 
+                                                                                  });
+                                                                } else if (selectedTimeframe === 'weekly') {
+                                                                    formattedDate = date.toLocaleDateString('en-US') + ' ' + 
+                                                                                  date.toLocaleTimeString('en-US', { 
+                                                                                      hour: '2-digit', 
+                                                                                      minute: '2-digit',
+                                                                                      hour12: false 
+                                                                                  });
+                                                                } else {
+                                                                    formattedDate = date.toLocaleDateString('en-US');
+                                                                }
+                                                                
+                                                                return `${formattedDate}
 Open: $${data.open.toFixed(2)}
 High: $${data.high.toFixed(2)}
 Low: $${data.low.toFixed(2)}
 Close: $${data.close.toFixed(2)}
-Volume: ${data.volume.toLocaleString()}`}
+Volume: ${data.volume.toLocaleString()}`;
+                                                            })()}
                                                         </title>
                                                     </rect>
                                                     
@@ -502,41 +652,112 @@ Volume: ${data.volume.toLocaleString()}`}
                                         })}
 
                                         {/* 添加价格标签 */}
-                                        {chartData.length > 0 && (
+                                        {currentChartData.length > 0 && (
                                             <>
                                                 <rect x="10" y="35" width="80" height="25" fill="rgba(255, 255, 255, 0.9)" rx="6" stroke="rgba(102, 126, 234, 0.3)" />
                                                 <text x="20" y="52" fontSize="14" fill="#2c3e50" fontWeight="600">
-                                                    ${Math.max(...chartData.map(d => d.high)).toFixed(2)}
+                                                    ${Math.max(...currentChartData.map(d => d.high)).toFixed(2)}
                                                 </text>
                                                 <rect x="10" y="440" width="80" height="25" fill="rgba(255, 255, 255, 0.9)" rx="6" stroke="rgba(102, 126, 234, 0.3)" />
                                                 <text x="20" y="457" fontSize="14" fill="#2c3e50" fontWeight="600">
-                                                    ${Math.min(...chartData.map(d => d.low)).toFixed(2)}
+                                                    ${Math.min(...currentChartData.map(d => d.low)).toFixed(2)}
                                                 </text>
 
                                                 {/* 添加时间轴标签 */}
-                                                {chartData.length > 0 && chartData.length <= 20 && (
-                                                    chartData.map((data, index) => {
-                                                        if (index % Math.ceil(chartData.length / 6) === 0) {
-                                                            const x = 70 + (index * (660 / (chartData.length - 1 || 1)));
-                                                            const date = new Date(data.datetime);
-                                                            const label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                                                            return (
-                                                                <text key={`time-${index}`} x={x} y="485" fontSize="12" fill="#666" textAnchor="middle">
-                                                                    {label}
-                                                                </text>
-                                                            );
+                                                {currentChartData.length > 0 && (
+                                                    (() => {
+                                                        // 根据数据量和时间范围决定显示的标签数量
+                                                        const maxLabels = selectedTimeframe === 'daily' ? 6 : 
+                                                                         selectedTimeframe === 'weekly' ? 8 : 10;
+                                                        
+                                                        if (selectedTimeframe === 'daily' || selectedTimeframe === 'weekly') {
+                                                            // Daily和Weekly模式：优先在日期变化处显示标签
+                                                            const labels = [];
+                                                            let lastDisplayedDate = '';
+                                                            let labelCount = 0;
+                                                            
+                                                            currentChartData.forEach((data, index) => {
+                                                                const currentDate = new Date(data.datetime);
+                                                                const dateString = currentDate.toDateString();
+                                                                const x = 70 + (index * (660 / (currentChartData.length - 1 || 1)));
+                                                                
+                                                                // 在日期变化处、第一个点、最后一个点显示标签
+                                                                const shouldShow = index === 0 || 
+                                                                                 index === currentChartData.length - 1 || 
+                                                                                 (dateString !== lastDisplayedDate && labelCount < maxLabels);
+                                                                
+                                                                // 对于Daily模式，如果标签太多，增加间隔控制
+                                                                if (selectedTimeframe === 'daily' && shouldShow && labelCount >= 2) {
+                                                                    // 当已经有2个或更多标签时，检查与上一个标签的距离
+                                                                    const lastLabelIndex = labels.length > 0 ? 
+                                                                        parseInt(labels[labels.length - 1].key.split('-')[1]) : 0;
+                                                                    if (index - lastLabelIndex < Math.floor(currentChartData.length / maxLabels)) {
+                                                                        return; // 跳过太近的标签
+                                                                    }
+                                                                }
+                                                                
+                                                                if (shouldShow) {
+                                                                    const label = formatTimeLabel(data.datetime, selectedTimeframe);
+                                                                    labels.push(
+                                                                        <text 
+                                                                            key={`time-${index}`} 
+                                                                            x={x} 
+                                                                            y="485" 
+                                                                            fontSize="9" 
+                                                                            fill="#666" 
+                                                                            textAnchor="middle"
+                                                                            style={{ 
+                                                                                fontFamily: 'monospace',
+                                                                                userSelect: 'none'
+                                                                            }}
+                                                                        >
+                                                                            {label}
+                                                                        </text>
+                                                                    );
+                                                                    lastDisplayedDate = dateString;
+                                                                    labelCount++;
+                                                                }
+                                                            });
+                                                            
+                                                            return labels;
+                                                        } else {
+                                                            // Monthly模式：均匀分布标签
+                                                            const step = Math.max(1, Math.ceil(currentChartData.length / maxLabels));
+                                                            
+                                                            return currentChartData.map((data, index) => {
+                                                                if (index % step === 0 || index === currentChartData.length - 1) {
+                                                                    const x = 70 + (index * (660 / (currentChartData.length - 1 || 1)));
+                                                                    const label = formatTimeLabel(data.datetime, selectedTimeframe);
+                                                                    return (
+                                                                        <text 
+                                                                            key={`time-${index}`} 
+                                                                            x={x} 
+                                                                            y="485" 
+                                                                            fontSize="11" 
+                                                                            fill="#666" 
+                                                                            textAnchor="middle"
+                                                                            style={{ 
+                                                                                fontFamily: 'monospace',
+                                                                                userSelect: 'none'
+                                                                            }}
+                                                                        >
+                                                                            {label}
+                                                                        </text>
+                                                                    );
+                                                                }
+                                                                return null;
+                                                            });
                                                         }
-                                                        return null;
-                                                    })
+                                                    })()
                                                 )}
                                             </>
                                         )}
                                     </svg>
                                 ) : (
                                     <div className="chart-error">
-                                        <p>No chart data available</p>
+                                        <p>No chart data available for {selectedTimeframe}</p>
                                         <p style={{ fontSize: '12px', color: '#666' }}>
-                                            Try selecting a different timeframe
+                                            {isAnyChartLoading ? 'Loading other timeframes...' : 'Try selecting a different timeframe'}
                                         </p>
                                     </div>
                                 )}
