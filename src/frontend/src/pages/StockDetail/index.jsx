@@ -506,7 +506,7 @@ const StockDetail = () => {
                                         <p>Loading {selectedTimeframe} chart data...</p>
                                     </div>
                                 ) : currentChartData && currentChartData.length > 0 ? (
-                                    <svg width="100%" height="100%" viewBox="0 0 800 500" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)' }}>
+                                    <svg width="100%" height="100%" viewBox="0 0 800 500">
                                         {/* 添加渐变定义 */}
                                         <defs>
                                             <linearGradient id="bullishGradient" x1="0%" y1="0%" x2="0%" y2="100%">
