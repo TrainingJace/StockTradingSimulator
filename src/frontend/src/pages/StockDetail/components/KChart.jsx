@@ -61,6 +61,7 @@ const KChart = ({ symbol, stock }) => {
                     close: parseFloat(v.close),
                     volume: parseInt(v.volume)
                 })).reverse();
+                console.log(`Fetched ${tf} K-data for ${stockSymbol}:`, processed);
                 setChartData(prev => ({ ...prev, [tf]: processed }));
             } catch (e) {
                 console.error(`❌ Failed to fetch ${tf} chart`, e);

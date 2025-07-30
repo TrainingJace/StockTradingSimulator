@@ -275,7 +275,7 @@ function StockDashboard() {
                 >
                   <div className="stock-header">
                     <h3 className="stock-symbol">{safeStock.symbol}</h3>
-                    <span className="stock-name">{safeStock.name}</span>
+                    {/* <span className="stock-name">{safeStock.name}</span> */}
                   </div>
                   <div className="stock-price">
                     <span className="current-price">${formatPrice(safeStock.price)}</span>
@@ -301,19 +301,8 @@ function StockDashboard() {
                     <span className="value">${
                      ((stock.volume || 0) * (stock.price || 0) / 1000000000).toFixed(2)
                     }B</span>
-
-
                     </div>
-                    <div className="detail-item">
-                      <span className="label">Market Cap:</span>
-                      <span className="value">
-                        {safeStock.marketCapitalization > 0 ?
-                          `$${formatNumber(safeStock.marketCapitalization / 1000000000, 1)}B` :
-                          'N/A'
-                        }
-                      </span>
 
-                    </div>
                   </div>
 
               );

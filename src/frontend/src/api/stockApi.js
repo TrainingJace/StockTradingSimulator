@@ -123,7 +123,7 @@ export const stockApi = {
   // 获取公司基本信息
   async getCompanyInfo(symbol) {
     try {
-      console.log(`=== Frontend: Getting company info for ${symbol} ===`);
+      // console.log(`=== Frontend: Getting company info for ${symbol} ===`);
       const response = await apiClient.get(`/stocks/company-info/${symbol}`);
       console.log('Company info API response:', response);
       return response; // 返回完整响应
