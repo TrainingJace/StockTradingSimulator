@@ -151,6 +151,7 @@ class Database {
       await this.pool.end();
     }
   }
+  
 }
 
 module.exports = new Database();
