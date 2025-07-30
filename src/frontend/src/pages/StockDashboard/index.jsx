@@ -258,7 +258,11 @@ function StockDashboard() {
                   </div>
                   <div className="detail-item">
                     <span className="label">Market Cap:</span>
-                    <span className="value">${formatNumber(stock.marketCap / 1000000000, 1)}B</span>
+                    {/* using volume * price , 2 decimals */}
+                    <span className="value">${
+                     ((stock.volume || 0) * (stock.price || 0) / 1000000000).toFixed(2)
+                    }B</span>
+
 
 
                   </div>
