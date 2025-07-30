@@ -79,41 +79,228 @@ const Analytics = () => {
   }, [selectedRange]);
 
   if (loading) {
-    return <div className="analytics-page"><p>Loading analytics...</p></div>;
+    return (
+      <div className="analytics-page" style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        background: '#f8fafc'
+      }}>
+        <div style={{ 
+          textAlign: 'center',
+          padding: '2rem',
+          background: 'white',
+          borderRadius: '12px',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)'
+        }}>
+          <div style={{
+            width: '50px',
+            height: '50px',
+            border: '4px solid #e2e8f0',
+            borderTopColor: '#3b82f6',
+            borderRadius: '50%',
+            margin: '0 auto 1rem',
+            animation: 'spin 1s linear infinite'
+          }}></div>
+          <p style={{ 
+            color: '#334155',
+            fontSize: '1.1rem',
+            fontWeight: '500'
+          }}>Loading analytics...</p>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="analytics-page"><p style={{color:'red'}}>加载失败：{error}</p></div>;
+    return (
+      <div className="analytics-page" style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        background: '#f8fafc'
+      }}>
+        <div style={{ 
+          textAlign: 'center',
+          padding: '2rem',
+          background: 'white',
+          borderRadius: '12px',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
+          maxWidth: '500px'
+        }}>
+          <div style={{
+            width: '50px',
+            height: '50px',
+            background: '#fee2e2',
+            borderRadius: '50%',
+            margin: '0 auto 1rem',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            color: '#dc2626',
+            fontSize: '1.5rem'
+          }}>!</div>
+          <h3 style={{ 
+            color: '#dc2626',
+            fontSize: '1.25rem',
+            fontWeight: '600',
+            marginBottom: '0.5rem'
+          }}>加载失败</h3>
+          <p style={{ 
+            color: '#64748b',
+            marginBottom: '1.5rem'
+          }}>{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            style={{
+              background: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              padding: '0.5rem 1rem',
+              borderRadius: '6px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'background 0.2s'
+            }}
+            onMouseOver={(e) => e.target.background = '#2563eb'}
+            onMouseOut={(e) => e.target.background = '#3b82f6'}
+          >
+            刷新页面
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (!analyticsData) {
-    return <div className="analytics-page"><p style={{color:'red'}}>暂无分析数据，请检查登录状态或数据源。</p></div>;
+    return (
+      <div className="analytics-page" style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        background: '#f8fafc'
+      }}>
+        <div style={{ 
+          textAlign: 'center',
+          padding: '2rem',
+          background: 'white',
+          borderRadius: '12px',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
+          maxWidth: '500px'
+        }}>
+          <div style={{
+            width: '50px',
+            height: '50px',
+            background: '#e2e8f0',
+            borderRadius: '50%',
+            margin: '0 auto 1rem',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            color: '#64748b',
+            fontSize: '1.5rem'
+          }}>i</div>
+          <h3 style={{ 
+            color: '#334155',
+            fontSize: '1.25rem',
+            fontWeight: '600',
+            marginBottom: '0.5rem'
+          }}>暂无分析数据</h3>
+          <p style={{ 
+            color: '#64748b',
+            marginBottom: '1.5rem'
+          }}>请检查登录状态或数据源</p>
+        </div>
+      </div>
+    );
   }
 
-  // Debug output for assetDistribution
-  console.log("Asset Distribution:", analyticsData.assetDistribution);
+  // 定义颜色方案
+  const colors = {
+    primary: '#4f46e5',
+    primaryLight: '#6366f1',
+    secondary: '#10b981',
+    danger: '#ef4444',
+    warning: '#f59e0b',
+    background: '#f8fafc',
+    cardBg: '#ffffff',
+    textPrimary: '#1e293b',
+    textSecondary: '#64748b',
+    border: '#e2e8f0',
+    chartColors: [
+      '#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', 
+      '#ec4899', '#14b8a6', '#84cc16', '#f97316', '#06b6d4'
+    ]
+  };
 
   return (
-    <div className="analytics-page" style={{ padding: '2.5rem', fontFamily: 'Inter,Segoe UI,sans-serif', maxWidth: '1280px', margin: '0 auto', background: '#f7f8fa' }}>
-      <header style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-        <h1 style={{ fontSize: '2.8rem', margin: 0, color: '#223A5F', letterSpacing: '1.5px', fontWeight: 800 }}>Portfolio Analytics</h1>
-        <p style={{ color: '#6C7A89', fontSize: '1.18rem', fontWeight: 500, marginTop: '0.5rem' }}>Track your investment performance and get smart insights</p>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '2rem', marginBottom: '1.5rem' }}>
+    <div className="analytics-page" style={{ 
+      padding: '2rem', 
+      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', 
+      maxWidth: '1400px', 
+      margin: '0 auto', 
+      background: colors.background,
+      minHeight: '100vh',
+      width: '100%',
+      boxSizing: 'border-box'
+    }}>
+      <header style={{ 
+        textAlign: 'center', 
+        marginBottom: '2.5rem',
+        position: 'relative'
+      }}>
+        <h1 style={{ 
+          fontSize: '2.5rem', 
+          margin: 0, 
+          color: colors.textPrimary, 
+          fontWeight: 700,
+          letterSpacing: '-0.025em',
+          marginBottom: '0.5rem'
+        }}>Portfolio Analytics</h1>
+        
+        <p style={{
+          color: colors.textSecondary,
+          fontSize: '1.1rem',
+          marginBottom: '1.5rem',
+          maxWidth: '600px',
+          marginLeft: 'auto',
+          marginRight: 'auto',
+          lineHeight: '1.5'
+        }}>
+          {simulationDate && `Data as of ${new Date(simulationDate).toLocaleDateString()}`}
+        </p>
+        
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          gap: '1rem', 
+          marginTop: '1.5rem'
+        }}>
           <select
             value={selectedRange}
             onChange={e => setSelectedRange(e.target.value)}
             style={{
-              padding: '10px 20px',
-              borderRadius: '12px',
-              border: '1.5px solid #36A2EB',
-              color: '#222',
-              background: '#f7f8fa',
-              fontSize: '1.08rem',
-              minWidth: '200px',
-              boxShadow: '0 2px 8px rgba(54,162,235,0.10)',
+              padding: '10px 16px',
+              borderRadius: '8px',
+              border: `1px solid ${colors.border}`,
+              color: colors.textPrimary,
+              background: colors.cardBg,
+              fontSize: '1rem',
+              minWidth: '180px',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
               fontWeight: 500,
               outline: 'none',
-              transition: 'border 0.2s'
+              transition: 'all 0.2s',
+              cursor: 'pointer',
+              appearance: 'none',
+              backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%231E293B%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")',
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 0.7rem top 50%',
+              backgroundSize: '0.65rem auto'
             }}
           >
             {timeRanges.map(range => (
@@ -123,51 +310,281 @@ const Analytics = () => {
         </div>
       </header>
 
-      {/* Main content section */}
-      <section style={{ display: 'flex', justifyContent: 'center', gap: '2rem' }}>
-        {/* Left side stats */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {['totalValue', 'totalReturn', 'returnPercentage'].map((key) => {
-            const isProfit = analyticsData[key] > 0;
-            const isLoss = analyticsData[key] < 0;
-            const isColoredKey = key === 'totalReturn' || key === 'returnPercentage';
-            const colorStyle = isColoredKey
-              ? { color: isProfit ? 'green' : isLoss ? 'red' : 'black' }
-              : {};
-
-            return (
-              <div
-                key={key}
-                style={{
-                  background: '#fff',
-                  borderRadius: '12px',
-                  padding: '1rem 1.5rem',
-                  width: '220px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                }}
-              >
-                <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#666' }}>
-                  {key === 'totalValue' ? 'Total Assets' : key === 'totalReturn' ? 'Total Return' : 'Return Rate'}
-                </h4>
-                <p style={{ fontSize: '1.3rem', fontWeight: 600, margin: '0.5rem 0 0 0', ...colorStyle }}>
-                  {key === 'returnPercentage' ? `${safe(analyticsData[key])}%` : `$${safe(analyticsData[key]).toLocaleString()}`}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Right side pie chart */}
+      {/* Stats and performers in one row */}
+      <section style={{ 
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+        gap: '1.5rem',
+        marginBottom: '2.5rem',
+        width: '100%'
+      }}>
+        {/* Stats Cards */}
         <div style={{ 
-          width: '380px',
-          background: '#fff', 
-          borderRadius: '12px', 
-          boxShadow: '0 2px 8px rgba(0,0,0,0.05)', 
+          background: colors.cardBg,
+          borderRadius: '12px',
           padding: '1.5rem',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center'
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.03)',
+          border: `1px solid ${colors.border}`,
+          transition: 'transform 0.2s, box-shadow 0.2s',
+          ':hover': {
+            transform: 'translateY(-2px)',
+            boxShadow: '0 10px 15px rgba(0, 0, 0, 0.05)'
+          },
+          width: '100%'
         }}>
+          <h3 style={{ 
+            color: colors.textPrimary,
+            fontSize: '1.25rem',
+            fontWeight: 600,
+            marginBottom: '1.5rem',
+            borderBottom: `1px solid ${colors.border}`,
+            paddingBottom: '0.75rem'
+          }}>Portfolio Summary</h3>
+          
+          <div style={{ 
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+            gap: '1rem',
+            width: '100%'
+          }}>
+            {['totalValue', 'totalReturn', 'returnPercentage'].map((key) => {
+              const isProfit = analyticsData[key] > 0;
+              const isLoss = analyticsData[key] < 0;
+              const isColoredKey = key === 'totalReturn' || key === 'returnPercentage';
+              const colorStyle = isColoredKey
+                ? { color: isProfit ? colors.secondary : isLoss ? colors.danger : colors.textPrimary }
+                : { color: colors.textPrimary };
+              
+              const iconBg = isColoredKey 
+                ? (isProfit ? '#d1fae5' : isLoss ? '#fee2e2' : '#e2e8f0') 
+                : '#e0e7ff';
+              
+              const iconColor = isColoredKey 
+                ? (isProfit ? colors.secondary : isLoss ? colors.danger : colors.textSecondary) 
+                : colors.primary;
+              
+              return (
+                <div
+                  key={key}
+                  style={{
+                    background: 'transparent',
+                    borderRadius: '8px',
+                    padding: '0.75rem',
+                    textAlign: 'center',
+                    border: `1px solid ${colors.border}`,
+                    width: '100%'
+                  }}
+                >
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    background: iconBg,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 0.75rem',
+                    color: iconColor
+                  }}>
+                    {key === 'totalValue' ? (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1ZM12 11.99H19C18.47 16.11 15.72 19.78 12 20.93V12H5V6.3L12 3.19V11.99Z" fill="currentColor"/>
+                      </svg>
+                    ) : key === 'totalReturn' ? (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 8L18.29 8.29L13.41 13.17L9.41 9.17L2 16.59L3.41 18L9.41 12L13.41 16L19.71 9.71L22 12V6H16Z" fill="currentColor"/>
+                      </svg>
+                    ) : (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M11 15H13V17H11V15ZM11 7H13V13H11V7ZM12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20Z" fill="currentColor"/>
+                      </svg>
+                    )}
+                  </div>
+                  <h4 style={{ 
+                    margin: 0, 
+                    fontSize: '0.875rem', 
+                    fontWeight: 500,
+                    color: colors.textSecondary,
+                    marginBottom: '0.25rem'
+                  }}>
+                    {key === 'totalValue'
+                      ? 'Total Assets'
+                      : key === 'totalReturn'
+                        ? 'Total Return'
+                        : 'Return Rate'}
+                  </h4>
+                  <p
+                    style={{
+                      fontSize: '1.25rem',
+                      fontWeight: 600,
+                      margin: 0,
+                      ...colorStyle
+                    }}
+                  >
+                    {key === 'returnPercentage'
+                      ? `${safe(analyticsData[key])}%`
+                      : `$${safe(analyticsData[key]).toLocaleString()}`}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        
+        {/* Top/Worst performers */}
+        <div style={{ 
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '1rem',
+          width: '100%'
+        }}>
+          <div style={{ 
+            background: colors.cardBg, 
+            borderRadius: '12px', 
+            padding: '1.5rem', 
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.03)',
+            border: `1px solid ${colors.border}`,
+            width: '100%'
+          }}>
+            <h3 style={{ 
+              color: colors.textPrimary,
+              fontSize: '1.25rem',
+              fontWeight: 600,
+              marginBottom: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <span style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '6px',
+                background: '#d1fae5',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: colors.secondary
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M5 9.2H8V19H5V9.2ZM10.6 5H13.4V19H10.6V5ZM16.2 13H19V19H16.2V13Z" fill="currentColor"/>
+                </svg>
+              </span>
+              Top Performers
+            </h3>
+            <ul style={{ 
+              padding: 0, 
+              margin: 0, 
+              listStyle: 'none',
+              display: 'grid',
+              gap: '0.75rem'
+            }}>
+              {(analyticsData.topPerformers || []).map(item => (
+                <li key={item.symbol} style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  paddingBottom: '0.75rem',
+                  borderBottom: `1px solid ${colors.border}`,
+                  ':last-child': {
+                    borderBottom: 'none',
+                    paddingBottom: '0'
+                  }
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ 
+                      fontWeight: 600,
+                      color: colors.textPrimary
+                    }}>{item.symbol}</span>
+                  </div>
+                  <span style={{ 
+                    marginLeft: 6, 
+                    color: item.change >= 0 ? colors.secondary : colors.danger,
+                    fontWeight: 600,
+                    fontSize: '0.95rem'
+                  }}>
+                    {item.change > 0 ? '+' : ''}{item.change}%
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          
+          <div style={{ 
+            background: colors.cardBg, 
+            borderRadius: '12px', 
+            padding: '1.5rem', 
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.03)',
+            border: `1px solid ${colors.border}`,
+            width: '100%'
+          }}>
+            <h3 style={{ 
+              color: colors.textPrimary,
+              fontSize: '1.25rem',
+              fontWeight: 600,
+              marginBottom: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <span style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '6px',
+                background: '#fee2e2',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: colors.danger
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M19 13H16V3H19V13ZM13 8H10V3H13V8ZM7 19H4V3H7V19Z" fill="currentColor"/>
+                </svg>
+              </span>
+              Worst Performers
+            </h3>
+            <ul style={{ 
+              padding: 0, 
+              margin: 0, 
+              listStyle: 'none',
+              display: 'grid',
+              gap: '0.75rem'
+            }}>
+              {(analyticsData.worstPerformers || []).map(item => (
+                <li key={item.symbol} style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  paddingBottom: '0.75rem',
+                  borderBottom: `1px solid ${colors.border}`,
+                  ':last-child': {
+                    borderBottom: 'none',
+                    paddingBottom: '0'
+                  }
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ 
+                      fontWeight: 600,
+                      color: colors.textPrimary
+                    }}>{item.symbol}</span>
+                  </div>
+                  <span style={{ 
+                    marginLeft: 6, 
+                    color: item.change >= 0 ? colors.secondary : colors.danger,
+                    fontWeight: 600,
+                    fontSize: '0.95rem'
+                  }}>
+                    {item.change > 0 ? '+' : ''}{item.change}%
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* 饼图 */}
+      <section style={{ display: 'flex', justifyContent: 'center', marginBottom: '2.5rem' }}>
+        <div style={{ width: '440px', background: '#fff', borderRadius: '20px', boxShadow: '0 4px 16px rgba(34,58,95,0.08)', padding: '2.2rem', border: '1px solid #e5e8ed', position: 'relative', transition: 'transform 0.2s' }}>
           <ChartErrorBoundary>
             {Array.isArray(analyticsData.assetDistribution) && analyticsData.assetDistribution.length > 0 ? (
               <Pie
@@ -175,35 +592,85 @@ const Analytics = () => {
                   labels: analyticsData.assetDistribution.map(i => i.symbol),
                   datasets: [{
                     data: analyticsData.assetDistribution.map(i => Number(i.percent)),
-                    backgroundColor: [
-                      '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
-                      '#9966FF', '#FF9F40', '#7FD8BE', '#FC5185', 
-                      '#4B7BE5', '#6C757D'
-                    ],
+                    backgroundColor: ['#223A5F', '#6C7A89', '#B4BCC2', '#36A2EB', '#FF6384'],
                     borderColor: '#fff',
                     borderWidth: 2
                   }]
                 }}
-                options={{ 
-                  plugins: { 
-                    legend: { 
-                      position: 'bottom',
-                      labels: { 
-                        color: '#222',
-                        font: { size: 13, weight: 'bold' },
-                        boxWidth: 14,
-                        padding: 15
-                      }
-                    } 
-                  },
-                  maintainAspectRatio: true,
-                  responsive: true
+                options={{ plugins: { legend: { position: 'bottom', labels: { color: '#222', font: { size: 15, weight: 'bold' } } } } }}
+              />
+            ) : (
+              <div style={{ textAlign: 'center', color: '#999', marginTop: '2rem' }}>No asset distribution data</div>
+            )}
+          </ChartErrorBoundary>
+        </div>
+      </section>
+
+      {/* 折线图 */}
+      <section style={{ marginBottom: '2.5rem' }}>
+        <h3 style={{ color: '#223A5F', fontWeight: 700, fontSize: '1.3rem', letterSpacing: '0.5px', marginBottom: '1rem' }}>Performance Charts</h3>
+        <div style={{ background: '#fff', borderRadius: '20px', padding: '2rem', boxShadow: '0 4px 16px rgba(34,58,95,0.08)', border: '1px solid #e5e8ed', maxWidth: '900px', margin: '0 auto' }}>
+          <ChartErrorBoundary>
+            {analyticsData.dailyReturns && Array.isArray(analyticsData.dailyReturns) && analyticsData.dailyReturns.length > 0 ? (
+              <Line
+                data={{
+                  labels: analyticsData.dailyReturns.map(d => d.date),
+                  datasets: [{
+                    label: 'Portfolio Value',
+                    data: analyticsData.dailyReturns.map(d => Number(d.value !== undefined ? d.value : d.total_value)),
+                    borderColor: '#223A5F',
+                    backgroundColor: 'rgba(34,58,95,0.07)',
+                    tension: 0.45,
+                    pointRadius: 2,
+                    fill: true,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#6C7A89',
+                    pointBorderColor: '#fff',
+                    pointHoverRadius: 4
+                  }]
+                }}
+                options={{
+                  plugins: { legend: { display: true } },
+                  scales: {
+                    y: { ticks: { callback: v => `$${v}` }, beginAtZero: false, grid: { color: '#e5e8ed' } },
+                    x: { grid: { color: '#e5e8ed' } }
+                  }
                 }}
               />
             ) : (
-              <div style={{ textAlign: 'center', color: '#999', marginTop: '1rem' }}>No asset distribution data</div>
+              <div style={{ textAlign: 'center', color: '#999', marginTop: '2rem' }}>No performance data</div>
             )}
           </ChartErrorBoundary>
+        </div>
+      </section>
+
+      {/* Top/Worst Performers */}
+      <section style={{ display: 'flex', justifyContent: 'center', gap: '3rem', marginBottom: '2.5rem' }}>
+        <div style={{ background: '#fff', borderRadius: '16px', padding: '1.5rem 2rem', minWidth: '220px', boxShadow: '0 2px 8px rgba(34,58,95,0.08)' }}>
+          <h4 style={{ color: '#223A5F', marginBottom: '1rem' }}>Top Performers</h4>
+          <ul style={{ padding: 0, margin: 0, listStyle: 'none' }}>
+            {(analyticsData.topPerformers || []).map(item => (
+              <li key={item.symbol} style={{ marginBottom: '0.5rem' }}>
+                <span style={{ fontWeight: 600 }}>{item.symbol}</span>
+                <span style={{ marginLeft: 8, color: item.change >= 0 ? 'green' : 'red' }}>
+                  {item.change > 0 ? '+' : ''}{item.change}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div style={{ background: '#fff', borderRadius: '16px', padding: '1.5rem 2rem', minWidth: '220px', boxShadow: '0 2px 8px rgba(34,58,95,0.08)' }}>
+          <h4 style={{ color: '#223A5F', marginBottom: '1rem' }}>Worst Performers</h4>
+          <ul style={{ padding: 0, margin: 0, listStyle: 'none' }}>
+            {(analyticsData.worstPerformers || []).map(item => (
+              <li key={item.symbol} style={{ marginBottom: '0.5rem' }}>
+                <span style={{ fontWeight: 600 }}>{item.symbol}</span>
+                <span style={{ marginLeft: 8, color: item.change >= 0 ? 'green' : 'red' }}>
+                  {item.change > 0 ? '+' : ''}{item.change}
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 
@@ -213,4 +680,3 @@ const Analytics = () => {
 };
 
 export default Analytics;
-

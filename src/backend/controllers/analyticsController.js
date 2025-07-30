@@ -89,6 +89,7 @@ exports.getPortfolioAnalytics = async (req, res) => {
     }
     dailySql += ' ORDER BY date';
     const dailyReturnsResult = await db.execute(dailySql, dailyParams);
+    console.log('Daily Returns Result:', dailyReturnsResult);
     // 单只股票详细分析
     let stockDetail = null;
     if (symbol) {

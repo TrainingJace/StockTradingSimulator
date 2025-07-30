@@ -10,7 +10,7 @@ function Home() {
       <div className="hero-section">
         <div className="hero-content">
           <h1 className="hero-title">
-            📈 StockPilot
+            📈 Stock Pilot
           </h1>
           <p className="hero-subtitle">
            Navigate Your Investments with Precision
