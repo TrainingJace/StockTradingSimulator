@@ -30,6 +30,23 @@ class StockService {
     
     console.log('StockService initialized with caching enabled');
   }
+  async getStock(symbol) {
+
+    const priceData = await this.getRealTimePrice(symbol);
+    // get information from stocks table
+    const query = 'SELECT * FROM stocks WHERE symbol = ?';
+    const result = await this.db.execute(query, [symbol]);
+    const stockInfo = result[0];
+    if (!stockInfo) {
+      return null;
+    }
+    // 组合股票信息和价格数据
+    return {
+      ...stockInfo,
+      ...priceData
+    };
+  }
+
 
   async getStockPrice(symbol, simulationDate = null) {
     return this.getRealTimePrice(symbol, null);

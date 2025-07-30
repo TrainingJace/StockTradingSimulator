@@ -167,12 +167,12 @@ function Portfolio() {
           >
             Positions
           </button>
-          <button 
+          {/* <button 
             className={`tab-btn ${activeTab === 'watchlist' ? 'active' : ''}`}
             onClick={() => handleTabChange('watchlist')}
           >
             Watchlist
-          </button>
+          </button> */}
           <button 
             className={`tab-btn ${activeTab === 'transactions' ? 'active' : ''}`}
             onClick={() => handleTabChange('transactions')}

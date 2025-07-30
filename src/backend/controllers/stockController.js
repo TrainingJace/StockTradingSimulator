@@ -1,7 +1,7 @@
 const services = require('../services');
 
 class StockController {
-  async getStockPrice(req, res) {
+  async getStock(req, res) {
     try {
       const { symbol } = req.params;
       const { simulation_date } = req.query;
