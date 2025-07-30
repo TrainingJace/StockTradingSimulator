@@ -11,7 +11,6 @@ const StockDetail = () => {
     const { symbol } = useParams();
 
     const [selectedTimeframe, setSelectedTimeframe] = useState('daily');
-    const [currentNewsIndex, setCurrentNewsIndex] = useState(0);
     const [stockDetail, setStockDetail] = useState(null);
     const [stock, setStock] = useState(null);
     const [loadingNews, setLoadingNews] = useState(false);
@@ -20,12 +19,6 @@ const StockDetail = () => {
     const [userSimulationDate, setUserSimulationDate] = useState(null);
     const [companyInfo, setCompanyInfo] = useState(null);
     const [loadingCompanyInfo, setLoadingCompanyInfo] = useState(true);
-
-    const currentNews = useMemo(() => {
-        const newsList = stockDetail?.news || [];
-        if (newsList.length === 0) return null;
-        return newsList[currentNewsIndex % newsList.length];
-    }, [stockDetail?.news, currentNewsIndex]);
 
     useEffect(() => {
         if (symbol) {
@@ -38,7 +31,6 @@ const StockDetail = () => {
     useEffect(() => {
         if (stock && stockDetail && symbol) {
             if (!stockDetail.news || stockDetail.news.length === 0) {
-                setCurrentNewsIndex(0);
                 fetchStockNews(symbol);
             }
         }
@@ -92,19 +84,28 @@ const StockDetail = () => {
     const fetchStockNews = async (stockSymbol) => {
         try {
             setLoadingNews(true);
+            console.log('Fetching news for:', stockSymbol);
             const response = await newsApi.getStockNews(stockSymbol, { limit: 3 });
+            console.log('News API response:', response);
+
             if (response.success && response.data?.length > 0) {
+                console.log('Raw news data:', response.data);
                 const processedNews = response.data.map(n => ({
-                    title: n.title,
-                    summary: n.summary || n.content?.substring(0, 200) + '...',
-                    content: n.content || 'N/A',
-                    sentimentScore: n.sentimentScore ?? 'N/A',
+                    title: n.title || 'No title',
+                    summary: n.summary || n.content?.substring(0, 200) + '...' || 'No summary available',
+                    content: n.content || 'No content available',
+                    sentimentScore: n.sentiment_score ?? n.sentimentScore ?? 'N/A',
                     date: new Date(n.published_date || n.date).toLocaleDateString('en-US'),
-                    source: n.source || 'N/A'
+                    source: n.source || 'Unknown'
                 }));
+                console.log('Processed news:', processedNews);
                 setStockDetail(prev => ({ ...prev, news: processedNews }));
+            } else {
+                console.log('No news data or empty response');
+                setStockDetail(prev => ({ ...prev, news: [] }));
             }
-        } catch {
+        } catch (error) {
+            console.error('Error fetching news:', error);
             setStockDetail(prev => ({ ...prev, news: [] }));
         } finally {
             setLoadingNews(false);
@@ -124,7 +125,7 @@ const StockDetail = () => {
         <div className="stock-detail-page">
             <div className="page-content">
                 {/* K 线图部分 */}
-               <KChart symbol={symbol} stock={stock} />
+                <KChart symbol={symbol} stock={stock} />
 
                 {/* 右侧公司信息 */}
                 <div className="company-info-section">
@@ -140,7 +141,7 @@ const StockDetail = () => {
                         <>
 
 
-                           
+
 
                             {/* 财务指标 */}
                             <div className="financial-metrics">
@@ -185,17 +186,17 @@ const StockDetail = () => {
                                             {stock?.volume ? `${(stock.volume / 1000000).toFixed(1)}M` : 'N/A'}
                                         </span>
                                     </div>
-                                    
+
                                 </div>
-                                
+
                             </div>
 
-                             {/* 基本信息 */}
+                            {/* 基本信息 */}
                             <div className="basic-info">
                                 <h4>Basic Information</h4>
                                 <div className="company-description">
-                                <p>{companyInfo.description || 'No description available.'}</p>
-                            </div>
+                                    <p>{companyInfo.description || 'No description available.'}</p>
+                                </div>
                                 <div className="info-grid">
                                     <div className="info-item">
                                         <span className="info-label">CIK</span>
@@ -230,45 +231,65 @@ const StockDetail = () => {
                 </div>
 
                 <div className="right-panel">
-                    
+
                     <div className="actions-section">
-                                                    <div className="company-header">
-                                <img
-                                    src={companyInfo.logo}
-                                    alt={`${companyInfo.name} logo`}
-                                    className="company-logo"
-                                    onError={(e) => {
-                                        e.target.src = `https://via.placeholder.com/80x80/667eea/ffffff?text=${companyInfo.symbol}`;
-                                    }}
-                                />
-                                <div className="company-details">
-                                    <h3>{companyInfo.name}</h3>
-                                    <span className="symbol">Symbol: {companyInfo.symbol}</span>
-                                    <span className="sector">Sector: {companyInfo.sector || 'N/A'}</span>
-                                    <span className="industry">Industry: {companyInfo.industry || 'N/A'}</span>
-                                    <span className="exchange">Exchange: {companyInfo.basicInfo?.exchange || 'N/A'}</span>
-                                </div>
+                        <div className="company-header">
+                            <img
+                                src={companyInfo.logo}
+                                alt={`${companyInfo.name} logo`}
+                                className="company-logo"
+                                onError={(e) => {
+                                    e.target.src = `https://via.placeholder.com/80x80/667eea/ffffff?text=${companyInfo.symbol}`;
+                                }}
+                            />
+                            <div className="company-details">
+                                <h3>{companyInfo.name}</h3>
+                                <span className="symbol">Symbol: {companyInfo.symbol}</span>
+                                <span className="sector">Sector: {companyInfo.sector || 'N/A'}</span>
+                                <span className="industry">Industry: {companyInfo.industry || 'N/A'}</span>
+                                <span className="exchange">Exchange: {companyInfo.basicInfo?.exchange || 'N/A'}</span>
                             </div>
-                            
+                        </div>
+
 
                         <button className="action-btn buy-btn" onClick={() => setShowBuyModal(true)}>
                             <span className="btn-icon">💰</span> Buy Stock
                         </button>
 
                     </div>
-                                    {/* 公司新闻 */}
-                <div className="news-section">
-                    <h3>Latest News</h3>
-                    {loadingNews ? <p>Loading news...</p> : (
-                        Array.isArray(stockDetail.news) && stockDetail.news.length > 0 ?
-                            <div className="news-item">
-                                <h4>{currentNews?.title}</h4>
-                                <p>{currentNews?.summary}</p>
-                                <span>{currentNews?.date}</span>
-                            </div> :
-                            <p>No related news</p>
-                    )}
-                </div>
+                    {/* 公司新闻 */}
+                    <div className="news-section">
+                        <h3>Latest News</h3>
+                        {loadingNews ? (
+                            <p>Loading news...</p>
+                        ) : (
+                            Array.isArray(stockDetail.news) && stockDetail.news.length > 0 ? (
+                                <div className="news-list">
+                                    {stockDetail.news.slice(0, 3).map((newsItem, index) => (
+                                        <div key={index} className="news-item">
+                                            <div className="news-header">
+                                                <h4 className="news-title">{newsItem.title}</h4>
+                                                <span className="news-date">{newsItem.date}</span>
+                                            </div>
+                                            <p className="news-summary">{newsItem.summary}</p>
+                                            <div className="news-footer">
+                                                <span className="news-source">Source: {newsItem.source}</span>
+                                                {newsItem.sentimentScore !== 'N/A' && (
+                                                    <span className="news-sentiment">
+                                                        Sentiment: {newsItem.sentimentScore}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="news-empty">
+                                    <p>No related news available</p>
+                                </div>
+                            )
+                        )}
+                    </div>
                 </div>
 
 

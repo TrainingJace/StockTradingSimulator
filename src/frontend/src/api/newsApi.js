@@ -3,7 +3,7 @@ import apiClient from './client.js';
 export const newsApi = {
   // 获取特定股票的新闻
   async getStockNews(symbol, options = {}) {
-    const { limit = 3 } = options;
+    const { limit = 5 } = options;
     const params = new URLSearchParams();
 
     if (limit) params.append('limit', limit.toString());

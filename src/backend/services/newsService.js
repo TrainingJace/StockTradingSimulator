@@ -1,8 +1,91 @@
 // 新闻服务实现
+const axios = require('axios');
+
 class NewsService {
   constructor() {
     this.db = require('../database/database');
+    this.API_KEY = 'd20ttppr01qvvf1k47lgd20ttppr01qvvf1k47m0'; // Finnhub API Key
+    this.ALPHA_VANTAGE_API_KEY = 'TTFO5NMW8G9LKPV6'; // Alpha Vantage API Key
     console.log('NewsService initialized');
+  }
+
+  // 从 Alpha Vantage API 获取新闻并存储到数据库
+  async fetchAndStoreNews(symbol, maxNews = 5) {
+    console.log(`=== Fetching and storing news for ${symbol} ===`);
+
+    try {
+      const url = `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=${symbol}&apikey=${this.ALPHA_VANTAGE_API_KEY}`;
+
+      console.log('Fetching from URL:', url);
+
+      // 调用 API
+      const response = await axios.get(url);
+
+      console.log(`📊 API Response for ${symbol}:`);
+      console.log('Response status:', response.status);
+      console.log('Feed length:', response.data.feed ? response.data.feed.length : 'No feed');
+
+      if (!response.data.feed) {
+        console.warn(`⚠️ No news for ${symbol}`);
+        return { success: true, stored: 0 };
+      }
+
+      let storedCount = 0;
+
+      // 处理新闻数据
+      for (const item of response.data.feed) {
+        try {
+          // 查找 ticker_sentiment 中是否包含该 symbol
+          const matched = item.ticker_sentiment.find(t => t.ticker === symbol);
+          if (!matched) continue;
+
+          // 转换日期格式 "20250730T052349" -> "2025-07-30"
+          const timePublished = item.time_published;
+          const date = `${timePublished.slice(0, 4)}-${timePublished.slice(4, 6)}-${timePublished.slice(6, 8)}`;
+
+          // 检查是否已存在相同的新闻
+          const existingQuery = `
+            SELECT id FROM news 
+            WHERE symbol = ? AND title = ? AND published_date = ?
+          `;
+          const existing = await this.db.execute(existingQuery, [symbol, item.title, date]);
+
+          if (existing.length === 0) {
+            // 插入新闻
+            await this.db.execute(
+              `INSERT INTO news (symbol, title, summary, content, source, sentiment_score, published_date, url)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+              [
+                symbol,
+                item.title || '',
+                item.summary || '',
+                item.summary || '', // 使用 summary 作为 content
+                item.source || '',
+                matched.ticker_sentiment_score ? parseFloat(matched.ticker_sentiment_score).toFixed(2) : null,
+                date,
+                item.url || ''
+              ]
+            );
+            storedCount++;
+            console.log(`Stored news: ${item.title?.substring(0, 50)}...`);
+          } else {
+            console.log(`News already exists: ${item.title?.substring(0, 50)}...`);
+          }
+
+          if (storedCount >= maxNews) break;
+
+        } catch (newsError) {
+          console.error('Error storing individual news item:', newsError.message);
+        }
+      }
+
+      console.log(`✅ ${symbol}: Successfully stored ${storedCount} new news items`);
+      return { success: true, stored: storedCount };
+
+    } catch (error) {
+      console.error(`❌ ${symbol}: Failed to fetch news - ${error.message}`);
+      return { success: false, error: error.message };
+    }
   }
 
 
@@ -23,27 +106,27 @@ class NewsService {
 
       console.log('Cleaned params:', { symbol, parsedLimit });
 
-      // 检查 news 表总数
-      const countQuery = 'SELECT COUNT(*) as total FROM news';
-      const countResult = await this.db.execute(countQuery);
-      const totalNewsCount = countResult[0]?.total || 0;
-      console.log('Total news count:', totalNewsCount);
-
-      if (totalNewsCount === 0) {
-        console.log('No news in database, return empty array.');
-        return [];
-      }
-
-      // 检查该 symbol 的新闻数
+      // 第一步：检查该 symbol 的新闻数
       const symbolCountQuery = 'SELECT COUNT(*) as symbolTotal FROM news WHERE symbol = ?';
       const symbolCountResult = await this.db.execute(symbolCountQuery, [symbol]);
       const symbolNewsCount = symbolCountResult[0]?.symbolTotal || 0;
       console.log(`News count for ${symbol}:`, symbolNewsCount);
 
-      // 测试简单查询
-      const simpleQuery = 'SELECT id, symbol, title FROM news WHERE symbol = ? LIMIT 1';
-      const simpleResult = await this.db.execute(simpleQuery, [symbol]);
-      console.log('Simple query result (first title):', simpleResult[0]?.title || 'No result');
+      // 如果没有该 symbol 的新闻，从 API 获取并存储
+      if (symbolNewsCount === 0) {
+        console.log(`No news found for ${symbol}, fetching from API...`);
+        const fetchResult = await this.fetchAndStoreNews(symbol, 5);
+
+        if (fetchResult.success) {
+          console.log(`Successfully fetched and stored ${fetchResult.stored} news items for ${symbol}`);
+        } else {
+          console.log(`Failed to fetch news from API: ${fetchResult.error}`);
+          // 即使API调用失败，也继续尝试从数据库查询（可能有其他来源的数据）
+        }
+      }
+
+      // 第二步：从数据库获取新闻
+      console.log('Fetching news from database...');
 
       // 构造主查询 - 获取最新的新闻
       const query = `
