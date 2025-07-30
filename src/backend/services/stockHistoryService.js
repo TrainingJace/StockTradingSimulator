@@ -285,6 +285,7 @@ class StockHistoryService {
    */
   async getHistoryData(symbol, startDate = null, endDate = null, limit = null) {
     try {
+      console.log(`History data requested for ${symbol} from ${startDate} to ${endDate} with limit ${limit}`);
       let query = `
         SELECT symbol, price_time, open_price, high_price, low_price, close_price, volume, created_at
         FROM stock_real_history 
@@ -293,12 +294,12 @@ class StockHistoryService {
       const params = [symbol];
 
       if (startDate) {
-        query += ' AND price_time >= ?';
+        query += ' AND DATE(price_time) >= DATE(?)';
         params.push(startDate);
       }
 
       if (endDate) {
-        query += ' AND price_time <= ?';
+        query += ' AND DATE(price_time) <= DATE(?)';
         params.push(endDate);
       }
 

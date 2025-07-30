@@ -110,7 +110,14 @@ function formatTimestamp(timestamp) {
   });
 }
 
+function getYesterdayDate() {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  return formatDate(yesterday);
+}
+
 module.exports = {
+  getYesterdayDate,
   getCurrentTimestamp,
   formatDate,
   getDaysAgo,
