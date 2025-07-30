@@ -319,15 +319,13 @@ class StockService {
 
       // 格式化数据，确保与前端期望的格式一致
       const result =  historyData.map(item => ({
-        date: new Date(item.price_time).toISOString().split('T')[0], //yyyy-MM-DD格式
+        date: item.price_time.split(' ')[0], // 直接提取日期部分，避免时区转换
         open: parseFloat(item.open_price),
         high: parseFloat(item.high_price),
         low: parseFloat(item.low_price),
         close: parseFloat(item.close_price),
-        volume: parseInt(item.volume)
+        volume: parseInt(item.volume),
       }));
-
-      console.log(`Result for ${symbol}:`, result);
       return result;
     } catch (error) {
       console.error(`Error getting historical data for ${symbol}:`, error);

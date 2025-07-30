@@ -96,6 +96,7 @@ class TradingApi {
         transactionMap.get(date).push(transaction);
       });
 
+
       // 组合价格历史和交易数据
       const chartData = priceHistory.map(priceData => {
         const date = priceData.date;
@@ -111,12 +112,14 @@ class TradingApi {
           action: lastTransaction ? lastTransaction.action : null,
           shares: lastTransaction ? lastTransaction.shares : null
         };
-
-        console .log(`Chart data for ${symbol} on ${date}:`, result);
+      
+        return result;        console.log(`Chart Data for ${symbol} on ${date}:`, result);
 
         return result;
       });
 
+     
+      console.log(`Chart Data for ${symbol}:`, chartData);
       return {
         success: true,
         data: chartData

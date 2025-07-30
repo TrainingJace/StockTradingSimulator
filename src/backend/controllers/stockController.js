@@ -10,7 +10,7 @@ class StockController {
         return res.status(400).json({ error: 'Stock symbol is required' });
       }
 
-      const stock = await services.stockService.getRealTimePrice(symbol);
+      const stock = await services.stockService.getStock(symbol);
       
       if (!stock) {
         return res.status(404).json({ error: 'Stock not found' });
