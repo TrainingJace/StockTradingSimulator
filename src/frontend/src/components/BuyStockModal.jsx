@@ -53,13 +53,13 @@ const BuyStockModal = ({ isOpen, onClose, symbol, onBuySuccess }) => {
 
   const handleBuyStock = async () => {
     if (!user) {
-      setError('请先登录');
+      setError('Please login first');
       return;
     }
 
     // 验证输入
     if (!shares || shares <= 0) {
-      setError('请输入有效的股数');
+      setError('Please enter a valid number of shares');
       return;
     }
 
@@ -85,7 +85,7 @@ const BuyStockModal = ({ isOpen, onClose, symbol, onBuySuccess }) => {
 
       if (response.success) {
         // 购买成功
-        alert(`成功购买 ${shares} 股 ${stock.symbol}！\n总价：$${(shares * parseFloat(stock.price)).toFixed(2)}`);
+        alert(`Successfully purchased ${shares} shares of ${stock.symbol}!\nTotal cost: $${(shares * parseFloat(stock.price)).toFixed(2)}`);
         
         // 调用成功回调
         if (onBuySuccess) {
@@ -99,11 +99,11 @@ const BuyStockModal = ({ isOpen, onClose, symbol, onBuySuccess }) => {
         setShares(1);
         setStock(null);
       } else {
-        setError(response.error || '购买失败，请重试');
+        setError(response.error || 'Purchase failed, please try again');
       }
     } catch (error) {
       console.error('Buy stock error:', error);
-      setError('网络错误，请重试');
+      setError('Network error, please try again');
     } finally {
       setLoading(false);
     }
@@ -117,7 +117,7 @@ const BuyStockModal = ({ isOpen, onClose, symbol, onBuySuccess }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div className="buy-stock-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>购买股票 {symbol && `- ${symbol}`}</h2>
+          <h2>Buy Stock {symbol && `- ${symbol}`}</h2>
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
 
@@ -125,90 +125,87 @@ const BuyStockModal = ({ isOpen, onClose, symbol, onBuySuccess }) => {
           {fetchingStock ? (
             <div className="loading-container">
               <div className="loading-spinner"></div>
-              <p>正在获取股票信息...</p>
+              <p>Loading stock information...</p>
             </div>
           ) : error && !stock ? (
             <div className="error-container">
               <div className="error-message">{error}</div>
               <button onClick={fetchStockData} className="retry-btn">
-                重新获取
+                Retry
               </button>
             </div>
           ) : stock ? (
             <>
-              <div className="stock-info">
-                <div className="stock-name">
-                  <span className="symbol">{stock.symbol}</span>
-                  <span className="name">{stock.name}</span>
-                </div>
-                <div className="stock-price">
-                  <span className="price">${formatPrice(stock.price)}</span>
-                  {(stock.change !== undefined || stock.changePercent !== undefined) && (
-                    <span 
-                      className={`change ${(parseFloat(stock.change) || 0) >= 0 ? 'positive' : 'negative'}`}
-                    >
-                      {(parseFloat(stock.change) || 0) >= 0 ? '+' : ''}${formatPrice(Math.abs(parseFloat(stock.change) || 0))}
-                      ({formatPrice(stock.changePercent)}%)
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="order-form">
-                <div className="form-group">
-                  <label htmlFor="shares">股数：</label>
-                  <input
-                    type="number"
-                    id="shares"
-                    value={shares}
-                    min="1"
-                    step="1"
-                    onChange={handleQuantityChange}
-                    disabled={loading}
-                  />
-                </div>
-
-                <div className="order-summary">
-                  <div className="summary-row">
-                    <span>单价：</span>
-                    <span>${formatPrice(stock.price)}</span>
+              <div className="modal-body">
+                <div className="stock-info">
+                  <div className="stock-name">
+                    <span className="symbol">{stock.symbol}</span>
+                    <span className="name">{stock.name}</span>
                   </div>
-                  <div className="summary-row">
-                    <span>数量：</span>
-                    <span>{shares} 股</span>
-                  </div>
-                  <div className="summary-row total">
-                    <span>总计：</span>
-                    <span>${totalCost.toFixed(2)}</span>
+                  <div className="stock-price">
+                    <span className="price">${formatPrice(stock.price)}</span>
+                    {(stock.change !== undefined || stock.changePercent !== undefined) && (
+                      <span 
+                        className={`change ${(parseFloat(stock.change) || 0) >= 0 ? 'positive' : 'negative'}`}
+                      >
+                        {(parseFloat(stock.change) || 0) >= 0 ? '+' : ''}${formatPrice(Math.abs(parseFloat(stock.change) || 0))}
+                        ({formatPrice(stock.changePercent)}%)
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                {error && (
-                  <div className="error-message">
-                    {error}
+                <div className="order-section">
+                  <div className="form-group">
+                    <label htmlFor="shares">Shares:</label>
+                    <input
+                      type="number"
+                      id="shares"
+                      value={shares}
+                      min="1"
+                      step="1"
+                      onChange={handleQuantityChange}
+                      disabled={loading}
+                    />
                   </div>
-                )}
-              </div>
 
-              <div className="modal-footer">
-                <button 
-                  className="cancel-btn" 
-                  onClick={onClose}
-                  disabled={loading}
-                >
-                  取消
-                </button>
-                <button 
-                  className="buy-btn" 
-                  onClick={handleBuyStock}
-                  disabled={loading}
-                >
-                  {loading ? '处理中...' : `买入 $${totalCost.toFixed(2)}`}
-                </button>
+                  <div className="order-summary">
+                    <div className="summary-row">
+                      <span>Price per share:</span>
+                      <span>${formatPrice(stock.price)}</span>
+                    </div>
+                    <div className="summary-row">
+                      <span>Quantity:</span>
+                      <span>{shares} shares</span>
+                    </div>
+                    <div className="summary-row total">
+                      <span>Total:</span>
+                      <span>${totalCost.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </>
           ) : null}
+
+          {error && (
+            <div className="error-message">
+              {error}
+            </div>
+          )}
         </div>
+
+        {stock && (
+          <div className="modal-footer">
+            <button 
+              className="buy-btn" 
+              onClick={handleBuyStock}
+              disabled={loading}
+            >
+              {loading ? 'Processing...' : `Buy $${totalCost.toFixed(2)}`}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

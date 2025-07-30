@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     price DECIMAL(10, 2) NOT NULL,
     total DECIMAL(15, 2) NOT NULL,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    cash_balance DECIMAL(15, 2) NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     FOREIGN KEY (portfolio_id) REFERENCES portfolios (id) ON DELETE CASCADE
 ) ENGINE = InnoDB;
@@ -94,17 +95,19 @@ CREATE TABLE IF NOT EXISTS watchlists (
 ) ENGINE = InnoDB;
 
 -- 创建股票历史数据表
-CREATE TABLE IF NOT EXISTS stock_history (
+CREATE TABLE IF NOT EXISTS stock_real_history (
     id INT PRIMARY KEY AUTO_INCREMENT,
     symbol VARCHAR(10) NOT NULL,
-    date DATE NOT NULL,
+    price_time DATETIME NOT NULL,
     open_price DECIMAL(10, 2) NOT NULL,
     high_price DECIMAL(10, 2) NOT NULL,
     low_price DECIMAL(10, 2) NOT NULL,
     close_price DECIMAL(10, 2) NOT NULL,
+    change_price       DECIMAL(10, 2) NOT NULL,
+    change_percent DECIMAL(5, 2) NOT NULL,
     volume BIGINT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_symbol_date (symbol, date)
+    UNIQUE KEY unique_symbol_date (symbol, price_time)
 ) ENGINE = InnoDB;
 
 -- 创建新闻表

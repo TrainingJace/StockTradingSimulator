@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useSearchableData } from '../../hooks'
-import { stockApi } from '../../api'
+import { stockApi, watchlistApi } from '../../api'
 import { formatPrice, formatPercentage, getPriceChangeColor, formatNumber, getErrorMessage } from '../../utils/formatters'
 import StockDetailModal from '../../components/StockDetailModal'
 import './StockDashboard.css'
@@ -8,6 +9,13 @@ import './StockDashboard.css'
 function StockDashboard() {
   const [selectedStock, setSelectedStock] = useState(null)
   const [showDetailModal, setShowDetailModal] = useState(false)
+  const [searchResults, setSearchResults] = useState([])
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [searchError, setSearchError] = useState(null)
+  const [showSearchResults, setShowSearchResults] = useState(false)
+  const searchTimeoutRef = useRef(null)
+  const searchContainerRef = useRef(null)
+  const navigate = useNavigate()
 
   // 使用混合搜索功能 - 外部API + 本地过滤
   // stockApi会自动从localStorage获取用户的simulation_date
@@ -30,12 +38,95 @@ function StockDashboard() {
     }
   );
 
+  // 搜索股票功能
+  const performSearch = async (query) => {
+    if (!query.trim()) {
+      setSearchResults([])
+      setShowSearchResults(false)
+      return
+    }
+
+    setSearchLoading(true)
+    setSearchError(null)
+    setShowSearchResults(true)
+
+    try {
+      const response = await stockApi.searchStocksBySymbol(query)
+      if (response.success) {
+        setSearchResults(response.data || [])
+      } else {
+        setSearchError(response.error || 'Search failed')
+        setSearchResults([])
+      }
+    } catch (error) {
+      setSearchError('Network error occurred')
+      setSearchResults([])
+    } finally {
+      setSearchLoading(false)
+    }
+  }
+
+  // 防抖搜索
+  const handleSearchChange = (e) => {
+    const value = e.target.value
+    setSearchTerm(value)
+
+    // 清除之前的定时器
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current)
+    }
+
+    // 设置新的定时器
+    searchTimeoutRef.current = setTimeout(() => {
+      performSearch(value)
+    }, 500) // 500ms 延迟
+  }
+
+  // 点击搜索结果外部关闭搜索结果
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
+        setShowSearchResults(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
+  // 清理定时器
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  // 添加股票到用户观察列表
+  const handleAddStock = async (stockInfo) => {
+    try {
+      const response = await watchlistApi.addToWatchlist(stockInfo.symbol)
+      if (response.success) {
+        alert(`Successfully added ${stockInfo.symbol} (${stockInfo.instrument_name}) to your watchlist!`)
+      } else {
+        alert(response.error || 'Failed to add stock to watchlist')
+      }
+      setShowSearchResults(false)
+      setSearchTerm('')
+    } catch (error) {
+      console.error('Error adding stock to watchlist:', error)
+      alert('Failed to add stock to watchlist. Please try again.')
+    }
+  }
+
 
 
   const handleStockSelect = (stock) => {
-    // 在新浏览器窗口中打开股票详情页面
-    const stockDetailUrl = `${window.location.origin}/stock/${stock.symbol}`;
-    window.open(stockDetailUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+    // 在同一窗口中导航到股票详情页面
+    navigate(`/stock/${stock.symbol}`);
   };
 
   const handleCloseModal = () => {
@@ -43,8 +134,15 @@ function StockDashboard() {
     setSelectedStock(null);
   };
 
+  const handleClearSearch = () => {
+    setSearchTerm('')
+    setSearchResults([])
+    setShowSearchResults(false)
+    clearSearch() // 清除原有的本地搜索
+  }
+
   const handleRefresh = () => {
-    clearSearch(); // 先清除搜索
+    handleClearSearch() // 清除搜索
     refetch(); // 然后刷新数据
   };
 
@@ -55,26 +153,59 @@ function StockDashboard() {
       </header>
 
       <div className="dashboard-controls">
-        <div className="search-container">
+        <div className="search-container" ref={searchContainerRef}>
           <input
             type="text"
             placeholder="Search stock code or name..."
-
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-
+            onChange={handleSearchChange}
             className="search-input"
           />
           {searchTerm && (
-
-            <button onClick={clearSearch} className="clear-search">
+            <button onClick={handleClearSearch} className="clear-search">
               ✕
             </button>
+          )}
+
+          {/* 搜索结果下拉框 */}
+          {showSearchResults && (
+            <div className="search-results">
+              {searchLoading ? (
+                <div className="search-loading">
+                  🔍 Searching...
+                </div>
+              ) : searchError ? (
+                <div className="search-error">
+                  ❌ {searchError}
+                </div>
+              ) : searchResults.length === 0 ? (
+                <div className="search-no-results">
+                  No results found
+                </div>
+              ) : (
+                searchResults.map((result, index) => (
+                  <div key={index} className="search-result-item">
+                    <div className="search-result-info">
+                      <div className="search-result-symbol">{result.symbol}</div>
+                      <div className="search-result-name">{result.instrument_name}</div>
+                      <div className="search-result-exchange">
+                        {result.exchange} • {result.country} • {result.currency}
+                      </div>
+                    </div>
+                    <button
+                      className="search-result-add-btn"
+                      onClick={() => handleAddStock(result)}
+                    >
+                      Add
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
           )}
         </div>
         <button onClick={handleRefresh} className="refresh-btn" disabled={loading}>
           {loading ? 'Refreshing...' : '🔄 Refresh Data'}
-
         </button>
       </div>
 

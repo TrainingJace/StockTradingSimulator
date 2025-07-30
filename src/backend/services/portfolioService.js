@@ -9,59 +9,74 @@ class PortfolioService {
   async getPortfolioByUserId(userId) {
     console.log(`Getting portfolio for user: ${userId}`);
     try {
-      // 获取投资组合基本信息
+      // 先查portfolio，拿到portfolioId
       const portfolioQuery = 'SELECT * FROM portfolios WHERE user_id = ?';
-      const portfolio = await this.db.execute(portfolioQuery, [userId]);
-      
-      if (!portfolio || portfolio.length === 0) {
+      const portfolioArr = await this.db.execute(portfolioQuery, [userId]);
+      if (!portfolioArr || portfolioArr.length === 0) {
         return null;
       }
+      const portfolioData = portfolioArr[0];
 
-      const portfolioData = portfolio[0];
-
-      // 获取持仓信息
+      // 查持仓
       const positionsQuery = 'SELECT * FROM positions WHERE portfolio_id = ?';
       const positions = await this.db.execute(positionsQuery, [portfolioData.id]);
 
-      console.log(`Found ${positions.length} positions for portfolio ${portfolioData.id}`);
-      if (positions.length > 0) {
-        console.log('Positions:', positions.map(p => `${p.symbol}: ${p.shares} shares`));
-      }
-
-      // 如果有持仓，更新当前价格和价值
+      // 如果有持仓，先查价格并更新所有持仓和portfolio
       if (positions && positions.length > 0) {
         const stockService = require('./stockService');
-        
-        // 获取所有持仓股票的符号
         const symbols = positions.map(pos => pos.symbol);
-        
-        const simulationDate = await this.authService.getSimulationDate(userId);
-        // 获取当前股票价格
+        // const simulationDate = await this.authService.getSimulationDate(userId);
         const stockPrices = {};
         for (const symbol of symbols) {
-          const stockData = await stockService.getStockPrice(symbol, simulationDate);
+          const stockData = await stockService.getStockPrice(symbol, null);
           if (stockData) {
             stockPrices[symbol] = stockData.price;
-            console.log(`price for ${symbol} on ${simulationDate}: ${stockData.price}`);
           }
         }
-        
-        // 更新持仓价格和价值
         if (Object.keys(stockPrices).length > 0) {
           await this.updatePositionPrices(userId, stockPrices);
-          
-          // 重新获取更新后的持仓信息
-          const updatedPositions = await this.db.execute(positionsQuery, [portfolioData.id]);
-          return {
-            ...portfolioData,
-            positions: updatedPositions || []
-          };
         }
       }
 
+      // 再查portfolio和positions，保证total_value等为最新
+      const latestPortfolioArr = await this.db.execute(portfolioQuery, [userId]);
+      const latestPortfolio = latestPortfolioArr[0];
+      const latestPositions = await this.db.execute(positionsQuery, [latestPortfolio.id]);
+
+      // 计算每个position的daily_return
+      const stockService = require('./stockService');
+      const positionsWithDailyReturn = await Promise.all(
+        latestPositions.map(async (pos) => {
+          const  price = await stockService.getRealTimePrice(pos.symbol, null);
+          const currentPrice = price ? parseFloat(price.price) : null;
+          let dailyReturn = parseFloat(price.change_price);
+         
+          return {
+            ...pos,
+            daily_return: dailyReturn,
+          };
+        })
+      );  
+
+      // const simulationDate = await this.authService.getSimulationDate(userId);
+      // const positionsWithDailyReturn = await Promise.all(
+      //   (latestPositions || []).map(async (pos) => {
+      //     const prevPriceRaw = await stockService.getPreviousPrice(pos.symbol, simulationDate);
+      //     const prevPrice = prevPriceRaw !== null && prevPriceRaw !== undefined ? parseFloat(prevPriceRaw) : null;
+      //     const currentPrice = pos.current_price !== undefined && pos.current_price !== null ? parseFloat(pos.current_price) : null;
+      //     let dailyReturn = null;
+      //     if (prevPrice !== null && currentPrice !== null) {
+      //       dailyReturn = (currentPrice - prevPrice) * pos.shares;
+      //     }
+      //     return {
+      //       ...pos,
+      //       daily_return: dailyReturn
+      //     };
+      //   })
+      // );
       return {
-        ...portfolioData,
-        positions: positions || []
+        ...latestPortfolio,
+        positions: positionsWithDailyReturn
       };
     } catch (error) {
       console.error('Error getting portfolio:', error);
@@ -128,7 +143,8 @@ class PortfolioService {
       const totalReturnPercent = initialBalance > 0 ? ((newTotalValue - initialBalance) / initialBalance) * 100 : 0;
 
       // 获取用户的模拟日期
-      const simulationDate = await this.authService.getSimulationDate(userId);
+      // const simulationDate = await this.authService.getSimulationDate(userId);
+      const simulationDate = new Date().toISOString().split('T')[0]; // 返回当前日期
 
       // 更新投资组合
       await this.db.execute(
@@ -171,7 +187,8 @@ class PortfolioService {
       );
 
       // 获取用户的模拟日期
-      const simulationDate = await this.authService.getSimulationDate(userId);
+      // const simulationDate = await this.authService.getSimulationDate(userId);
+      const simulationDate = new Date().toISOString().split('T')[0]; // 返回当前日期
 
       // 更新每个持仓的价格
       for (const position of positions) {

@@ -16,4 +16,7 @@ router.post('/sell', tradingController.executeSellOrder);
 // 获取交易历史
 router.get('/history', tradingController.getTransactionHistory);
 
+// 获取特定股票的交易历史
+router.get('/history/:symbol', tradingController.getStockTransactionHistory);
+
 module.exports = router;

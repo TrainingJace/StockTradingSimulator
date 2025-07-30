@@ -103,6 +103,34 @@ class TradingController {
       });
     }
   }
+
+  // 获取特定股票的交易历史
+  async getStockTransactionHistory(req, res) {
+    try {
+      const userId = req.user.userId;
+      const { symbol } = req.params;
+      const { limit = 100, offset = 0 } = req.query;
+
+      // 确保参数是有效的数字
+      const limitNum = parseInt(limit) || 100;
+      const offsetNum = parseInt(offset) || 0;
+
+      // 获取特定股票的交易历史
+      const result = await tradingService.getStockTransactions(userId, symbol, limitNum, offsetNum);
+
+      res.json({
+        success: true,
+        data: result.data,
+        message: 'Stock transaction history retrieved successfully'
+      });
+    } catch (error) {
+      console.error('Error getting stock transaction history:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
 }
 
 module.exports = new TradingController();

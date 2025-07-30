@@ -41,17 +41,16 @@ function TransactionHistory({
           <div className="table-header">
             <span>Date</span>
             <span>Stock Symbol</span>
-            <span>Stock Name</span>
             <span>Action</span>
             <span>Quantity</span>
             <span>Price</span>
             <span>Total Amount</span>
+            <span>Cash Balance</span>
           </div>
           {transactions.map((transaction) => (
             <div key={transaction.id} className="table-row">
               <span>{formatDate(transaction.timestamp)}</span>
               <span className="stock-symbol">{transaction.symbol}</span>
-              <span>{transaction.stockName || '-'}</span>
               <span className={`transaction-type ${transaction.type.toLowerCase()}`}>
                 {transaction.type === 'BUY' ? 'Buy' : 'Sell'}
               </span>
@@ -60,6 +59,7 @@ function TransactionHistory({
               <span className={`total ${transaction.type.toLowerCase()}`}>
                 ${formatPrice(transaction.total)}
               </span>
+              <span className="cash-balance">${formatPrice(transaction.cashBalance)}</span>
             </div>
           ))}
         </div>
