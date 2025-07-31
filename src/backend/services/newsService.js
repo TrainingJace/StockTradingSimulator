@@ -9,12 +9,16 @@ class NewsService {
     console.log('NewsService initialized');
   }
 
-  // 从 Alpha Vantage API 获取新闻并存储到数据库
+  // 从 Finnhub API 获取新闻并存储到数据库
   async fetchAndStoreNews(symbol, maxNews = 5) {
     console.log(`=== Fetching and storing news for ${symbol} ===`);
 
     try {
-      const url = `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=${symbol}&apikey=${this.ALPHA_VANTAGE_API_KEY}`;
+      // 设置日期范围：从30天前到今天
+      const to = new Date().toISOString().split('T')[0]; // 今天 YYYY-MM-DD
+      const from = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 30天前
+      
+      const url = `https://finnhub.io/api/v1/company-news?symbol=${symbol}&from=${from}&to=${to}&token=${this.API_KEY}`;
 
       console.log('Fetching from URL:', url);
 
@@ -24,32 +28,27 @@ class NewsService {
       console.log(`📊 API Response for ${symbol}:`);
       console.log('Response status:', response.status);
       console.log('Response data:', response.data);
-      console.log('Feed length:', response.data.feed ? response.data.feed.length : 'No feed');
+      console.log('News length:', response.data ? response.data.length : 'No data');
 
-      if (!response.data.feed) {
+      if (!response.data || !Array.isArray(response.data) || response.data.length === 0) {
         console.warn(`⚠️ No news for ${symbol}`);
         return { success: true, stored: 0 };
       }
 
       let storedCount = 0;
 
-      // 处理新闻数据
-      for (const item of response.data.feed) {
+      // 处理新闻数据 - Finnhub返回的是直接的数组
+      for (const item of response.data) {
         try {
-          // 查找 ticker_sentiment 中是否包含该 symbol
-          const matched = item.ticker_sentiment.find(t => t.ticker === symbol);
-          if (!matched) continue;
-
-          // 转换日期格式 "20250730T052349" -> "2025-07-30"
-          const timePublished = item.time_published;
-          const date = `${timePublished.slice(0, 4)}-${timePublished.slice(4, 6)}-${timePublished.slice(6, 8)}`;
+          // 转换时间戳为日期格式
+          const date = new Date(item.datetime * 1000).toISOString().split('T')[0]; // Unix时间戳转换为YYYY-MM-DD
 
           // 检查是否已存在相同的新闻
           const existingQuery = `
             SELECT id FROM news 
             WHERE symbol = ? AND title = ? AND published_date = ?
           `;
-          const existing = await this.db.execute(existingQuery, [symbol, item.title, date]);
+          const existing = await this.db.execute(existingQuery, [symbol, item.headline, date]);
 
           if (existing.length === 0) {
             // 插入新闻
@@ -58,19 +57,19 @@ class NewsService {
                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
               [
                 symbol,
-                item.title || '',
+                item.headline || '',
                 item.summary || '',
                 item.summary || '', // 使用 summary 作为 content
                 item.source || '',
-                matched.ticker_sentiment_score ? parseFloat(matched.ticker_sentiment_score).toFixed(2) : null,
+                null, // Finnhub API 不提供情感分数
                 date,
                 item.url || ''
               ]
             );
             storedCount++;
-            console.log(`Stored news: ${item.title?.substring(0, 50)}...`);
+            console.log(`Stored news: ${item.headline?.substring(0, 50)}...`);
           } else {
-            console.log(`News already exists: ${item.title?.substring(0, 50)}...`);
+            console.log(`News already exists: ${item.headline?.substring(0, 50)}...`);
           }
 
           if (storedCount >= maxNews) break;
