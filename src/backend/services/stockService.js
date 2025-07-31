@@ -420,7 +420,157 @@ class StockService {
     };
   }
 
-  async getCompanyInfo(symbol) {
+  // 从Alpha Vantage获取公司概览数据并更新数据库
+  async fetchAndUpdateCompanyOverview(symbol) {
+    try {
+      console.log(`=== Fetching company overview for ${symbol} from Alpha Vantage ===`);
+
+      const apiKey = '8LNC0AYSA75F0HUC';
+      const url = `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${symbol}&apikey=${apiKey}`;
+
+      const response = await axios.get(url);
+      const data = response.data;
+
+      // 检查API响应是否成功
+      if (!data || data.Note || data.Information || !data.Symbol) {
+        console.log('Alpha Vantage API error or no data found:', data);
+        return {
+          success: false,
+          error: 'Failed to fetch company overview from Alpha Vantage'
+        };
+      }
+
+      console.log('Alpha Vantage response:', data);
+
+      // 首先检查stocks表中是否已存在该股票
+      const checkQuery = 'SELECT symbol FROM stocks WHERE symbol = ?';
+      const existingStock = await this.db.execute(checkQuery, [symbol.toUpperCase()]);
+
+      if (existingStock.length === 0) {
+        // 如果不存在，先插入基本股票信息
+        const insertStockQuery = `
+          INSERT INTO stocks (
+            symbol, name, sector, industry, description, cik, 
+            exchange, currency, country, address, officialSite,
+            marketCapitalization, ebitda, peRatio, pegRatio, bookValue
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        await this.db.execute(insertStockQuery, [
+          data.Symbol || symbol.toUpperCase(),
+          data.Name || '',
+          data.Sector || null,
+          data.Industry || null,
+          data.Description || null,
+          data.CIK || null,
+          data.Exchange || null,
+          data.Currency || 'USD',
+          data.Country || 'USA',
+          data.Address || null,
+          data.OfficialSite || null,
+          data.MarketCapitalization || null,
+          data.EBITDA || null,
+          data.PERatio || null,
+          data.PEGRatio || null,
+          data.BookValue || null
+        ]);
+
+        console.log(`Inserted new stock ${symbol} into stocks table`);
+      } else {
+        // 如果存在，更新股票信息
+        const updateStocksQuery = `
+          UPDATE stocks SET
+            name = COALESCE(?, name),
+            sector = COALESCE(?, sector),
+            industry = COALESCE(?, industry),
+            description = COALESCE(?, description),
+            cik = COALESCE(?, cik),
+            exchange = COALESCE(?, exchange),
+            currency = COALESCE(?, currency),
+            country = COALESCE(?, country),
+            address = ?,
+            officialSite = ?,
+            marketCapitalization = ?,
+            ebitda = ?,
+            peRatio = ?,
+            pegRatio = ?,
+            bookValue = ?
+          WHERE symbol = ?
+        `;
+
+        await this.db.execute(updateStocksQuery, [
+          data.Name || null,
+          data.Sector || null,
+          data.Industry || null,
+          data.Description || null,
+          data.CIK || null,
+          data.Exchange || null,
+          data.Currency || null,
+          data.Country || null,
+          data.Address || null,
+          data.OfficialSite || null,
+          data.MarketCapitalization || null,
+          data.EBITDA || null,
+          data.PERatio || null,
+          data.PEGRatio || null,
+          data.BookValue || null,
+          symbol.toUpperCase()
+        ]);
+
+        console.log(`Updated stocks table for ${symbol}`);
+      }
+
+      // 获取当前股票价格数据
+      const stockData = await this.getStock(symbol);
+      console.log(`Fetched stock data for ${symbol}:`, stockData);
+
+      if (stockData) {
+        // 插入到stock_real_history表
+        const insertHistoryQuery = `
+          INSERT INTO stock_real_history (
+            symbol, price_time, open_price, high_price, low_price, 
+            close_price, change_price, change_percent, volume
+          ) VALUES (?, NOW(), ?, ?, ?, ?, ?, ?, ?)
+          ON DUPLICATE KEY UPDATE
+            open_price = VALUES(open_price),
+            high_price = VALUES(high_price),
+            low_price = VALUES(low_price),
+            close_price = VALUES(close_price),
+            change_price = VALUES(change_price),
+            change_percent = VALUES(change_percent),
+            volume = VALUES(volume)
+        `;
+
+        await this.db.execute(insertHistoryQuery, [
+          symbol.toUpperCase(),
+          stockData.price || 0,
+          stockData.price || 0,
+          stockData.price || 0,
+          stockData.price || 0,
+          stockData.change || 0,
+          stockData.changePercent || 0,
+          stockData.volume || 0
+        ]);
+
+        console.log(`Inserted/Updated stock_real_history for ${symbol}`);
+      }
+
+      return {
+        success: true,
+        data: {
+          alphaVantageData: data,
+          stockData: stockData
+        }
+      };
+
+    } catch (error) {
+      console.error('Error in fetchAndUpdateCompanyOverview:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  } async getCompanyInfo(symbol) {
     try {
       console.log(`=== StockService: Getting company info for ${symbol} ===`);
 

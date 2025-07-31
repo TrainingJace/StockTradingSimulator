@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useSearchableData } from '../../hooks'
 import { stockApi, watchlistApi } from '../../api'
 import { formatPrice, formatPercentage, getPriceChangeColor, formatNumber, getErrorMessage } from '../../utils/formatters'
+import ErrorBoundary from '../../components/ErrorBoundary.jsx'
 import './StockDashboard.css'
 
 function StockDashboard() {
@@ -29,9 +30,20 @@ function StockDashboard() {
     () => stockApi.getStocks(),
 
     (stock, term) => {
-      if (!term) return true;
-      return stock.symbol.toLowerCase().includes(term.toLowerCase()) ||
-        stock.name.toLowerCase().includes(term.toLowerCase());
+      try {
+        if (!term) return true;
+        if (!stock) return false;
+
+        const symbol = stock.symbol || '';
+        const name = stock.name || '';
+        const searchTermLower = term.toLowerCase();
+
+        return symbol.toLowerCase().includes(searchTermLower) ||
+          name.toLowerCase().includes(searchTermLower);
+      } catch (error) {
+        console.error('Error in filter function:', error, { stock, term });
+        return false; // 如果出错，不显示这个股票
+      }
     }
   );
 
@@ -65,18 +77,22 @@ function StockDashboard() {
 
   // 防抖搜索
   const handleSearchChange = (e) => {
-    const value = e.target.value
-    setSearchTerm(value)
+    try {
+      const value = e.target.value
+      setSearchTerm(value)
 
-    // 清除之前的定时器
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current)
+      // 清除之前的定时器
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current)
+      }
+
+      // 设置新的定时器
+      searchTimeoutRef.current = setTimeout(() => {
+        performSearch(value)
+      }, 500) // 500ms 延迟
+    } catch (error) {
+      console.error('Error in handleSearchChange:', error);
     }
-
-    // 设置新的定时器
-    searchTimeoutRef.current = setTimeout(() => {
-      performSearch(value)
-    }, 500) // 500ms 延迟
   }
 
   // 点击搜索结果外部关闭搜索结果
@@ -102,28 +118,46 @@ function StockDashboard() {
     }
   }, [])
 
-  // 添加股票到用户观察列表
-  const handleAddStock = async (stockInfo) => {
-    try {
-      const response = await watchlistApi.addToWatchlist(stockInfo.symbol)
-      if (response.success) {
-        alert(`Successfully added ${stockInfo.symbol} (${stockInfo.instrument_name}) to your watchlist!`)
-      } else {
-        alert(response.error || 'Failed to add stock to watchlist')
-      }
-      setShowSearchResults(false)
-      setSearchTerm('')
-    } catch (error) {
-      console.error('Error adding stock to watchlist:', error)
-      alert('Failed to add stock to watchlist. Please try again.')
-    }
-  }
+
 
 
 
   const handleStockSelect = (stock) => {
     // 在同一窗口中导航到股票详情页面
     navigate(`/stock/${stock.symbol}`);
+  };
+
+  // 添加股票到数据库并获取详细信息
+  const handleAddStock = async (result) => {
+    try {
+      console.log('Adding stock:', result.symbol);
+
+      // 调用API获取并更新公司概览数据
+      const response = await stockApi.fetchCompanyOverview(result.symbol);
+
+      if (response.success) {
+        console.log('Stock data updated successfully:', response.data);
+
+        // 关闭搜索结果
+        setShowSearchResults(false);
+        setSearchTerm('');
+
+        // 刷新股票列表以显示新添加的股票
+        // refetch();
+
+        // 可选：显示成功消息
+        alert(`Successfully added ${result.symbol} and updated company information!`);
+
+        // 导航到新添加的股票详情页
+        navigate(`/stock/${result.symbol}`);
+      } else {
+        console.error('Failed to add stock:', response.error);
+        alert(`Failed to add ${result.symbol}: ${response.error}`);
+      }
+    } catch (error) {
+      console.error('Error adding stock:', error);
+      alert(`Error adding ${result.symbol}: ${error.message}`);
+    }
   };
 
   const handleClearSearch = () => {
@@ -221,51 +255,58 @@ function StockDashboard() {
               {searchTerm ? 'No matching stocks found' : 'No stock data available'}
             </div>
           ) : (
-            stocks && stocks.map((stock) => (
+            stocks && stocks.map((stock) => {
+              // 安全地获取股票数据，避免未定义值导致错误
+              const safeStock = {
+                symbol: stock?.symbol || 'N/A',
+                name: stock?.name || 'Unknown',
+                price: stock?.price || 0,
+                change: stock?.change || 0,
+                changePercent: stock?.changePercent || 0,
+                volume: stock?.volume || 0,
+                marketCap: stock?.marketCap || 0
+              };
 
-              <div
-                key={stock.symbol}
-                className="stock-card"
-                onClick={() => handleStockSelect(stock)}
-              >
-                <div className="stock-header">
-                  <h3 className="stock-symbol">{stock.symbol}</h3>
-                  <span className="stock-name">{stock.name}</span>
-                </div>
-                <div className="stock-price">
-                  <span className="current-price">${formatPrice(stock.price)}</span>
-                </div>
-                <div className="stock-change">
-                  <span
-                    className="price-change"
-                    style={{ color: getPriceChangeColor(stock.change) }}
-                  >
-                    {stock.change > 0 ? '+' : ''}${formatPrice(Math.abs(stock.change))}
-                  </span>
-                  <span
-                    className="percentage-change"
-                    style={{ color: getPriceChangeColor(stock.change) }}
-                  >
-                    ({formatPercentage(stock.changePercent)})
-                  </span>
-
-                </div>
-                <div className="stock-details">
-                  <div className="detail-item">
-                    <span className="label">Volume:</span>
-                    <span className="value">{formatNumber(stock.volume || 0)}</span>
+              return (
+                <div
+                  key={safeStock.symbol}
+                  className="stock-card"
+                  onClick={() => handleStockSelect(stock)}
+                >
+                  <div className="stock-header">
+                    <h3 className="stock-symbol">{safeStock.symbol}</h3>
+                    {/* <span className="stock-name">{safeStock.name}</span> */}
+                  </div>
+                  <div className="stock-price">
+                    <span className="current-price">${formatPrice(safeStock.price)}</span>
+                  </div>
+                  <div className="stock-change">
+                    <span
+                      className="price-change"
+                      style={{ color: getPriceChangeColor(safeStock.change) }}
+                    >
+                      {safeStock.change > 0 ? '+' : ''}${formatPrice(Math.abs(safeStock.change))}
+                    </span>
+                    <span
+                      className="percentage-change"
+                      style={{ color: getPriceChangeColor(safeStock.change) }}
+                    >
+                      ({formatPercentage(safeStock.changePercent)})
+                    </span>
 
                   </div>
                   <div className="detail-item">
                     <span className="label">Market Cap:</span>
-                    <span className="value">${formatNumber(stock.marketCap / 1000000000, 1)}B</span>
-
+                    {/* using volume * price , 2 decimals */}
+                    <span className="value">${
+                     ((stock.volume || 0) * (stock.price || 0) / 1000000000).toFixed(2)
+                    }B</span>
+                    </div>
 
                   </div>
-                </div>
 
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}
@@ -280,4 +321,11 @@ function StockDashboard() {
   )
 }
 
-export default StockDashboard
+// 导出被ErrorBoundary包装的组件
+const StockDashboardWithErrorBoundary = () => (
+  <ErrorBoundary>
+    <StockDashboard />
+  </ErrorBoundary>
+);
+
+export default StockDashboardWithErrorBoundary;

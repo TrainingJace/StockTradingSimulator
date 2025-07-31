@@ -5,7 +5,7 @@ class NewsController {
   async getStockNews(req, res) {
     try {
       const { symbol } = req.params;
-      const { limit = 3 } = req.query;
+      const { limit = 5 } = req.query;
 
       console.log('=== NEWS CONTROLLER ===');
       console.log('Request params:', { symbol, limit });
@@ -17,7 +17,7 @@ class NewsController {
         });
       }
 
-      // 直接获取最新的新闻，不需要 simulationDate
+      // 调用newsService.getStockNews - 它会自动处理API调用和数据库存储
       console.log('Calling newsService.getStockNews...');
       const news = await newsService.getStockNews(symbol, parseInt(limit));
 
@@ -47,7 +47,6 @@ class NewsController {
       });
     }
   }
-
 
   // 获取市场新闻
   async getMarketNews(req, res) {

@@ -123,12 +123,28 @@ export const stockApi = {
   // 获取公司基本信息
   async getCompanyInfo(symbol) {
     try {
-      console.log(`=== Frontend: Getting company info for ${symbol} ===`);
+      // console.log(`=== Frontend: Getting company info for ${symbol} ===`);
       const response = await apiClient.get(`/stocks/company-info/${symbol}`);
       console.log('Company info API response:', response);
       return response; // 返回完整响应
     } catch (error) {
       console.error('Error getting company info:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  },
+
+  // 获取并更新公司概览数据（从Alpha Vantage）
+  async fetchCompanyOverview(symbol) {
+    try {
+      console.log(`=== Frontend: Fetching company overview for ${symbol} ===`);
+      const response = await apiClient.post(`/stocks/fetch-overview/${symbol}`);
+      console.log('Fetch company overview API response:', response);
+      return response; // 返回完整响应
+    } catch (error) {
+      console.error('Error fetching company overview:', error);
       return {
         success: false,
         error: error.message
