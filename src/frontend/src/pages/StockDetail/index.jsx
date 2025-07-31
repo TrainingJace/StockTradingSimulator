@@ -97,7 +97,8 @@ const StockDetail = () => {
                     content: n.content || 'No content available',
                     sentimentScore: n.sentiment_score ?? n.sentimentScore ?? 'N/A',
                     date: new Date(n.published_date || n.date).toLocaleDateString('en-US'),
-                    source: n.source || 'Unknown'
+                    source: n.source || 'Unknown',
+                    url: n.url || 'No URL available'
                 }));
                 console.log('Processed news:', processedNews);
                 setStockDetail(prev => ({ ...prev, news: processedNews }));
@@ -254,9 +255,18 @@ const StockDetail = () => {
                             Array.isArray(stockDetail.news) && stockDetail.news.length > 0 ? (
                                 <div className="news-list">
                                     {stockDetail.news.slice(0, 3).map((newsItem, index) => (
-                                        <div key={index} className="news-item">
+                                        <div 
+                                            key={index} 
+                                            className="news-item clickable"
+                                            onClick={() => {
+                                                if (newsItem.url && newsItem.url !== 'No URL available') {
+                                                    window.open(newsItem.url, '_blank', 'noopener,noreferrer');
+                                                }
+                                            }}
+                                            style={{ cursor: newsItem.url && newsItem.url !== 'No URL available' ? 'pointer' : 'default' }}
+                                        >
                                             <div className="news-header">
-                                                <h4 className="news-title">{newsItem.title}</h4>
+                                                <h4 className="news-title">{newsItem.title}  </h4>
                                                 <span className="news-date">{newsItem.date}</span>
                                             </div>
                                             <p className="news-summary">{newsItem.summary}</p>

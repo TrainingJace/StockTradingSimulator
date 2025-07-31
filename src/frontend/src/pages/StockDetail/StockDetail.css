@@ -1303,3 +1303,36 @@ body {
     text-align: right;
     flex-shrink: 0;
 }
+
+/* 可点击新闻项样式 */
+.news-item.clickable {
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.news-item.clickable:hover {
+    transform: translateY(-3px);
+    box-shadow:
+        0 15px 40px rgba(0, 0, 0, 0.15),
+        0 6px 20px rgba(0, 0, 0, 0.10),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    border-color: rgba(99, 102, 241, 0.4);
+}
+
+.news-item.clickable:active {
+    transform: translateY(-1px);
+    transition: transform 0.1s;
+}
+
+.news-link-indicator {
+    color: #667eea;
+    font-size: 0.75em;
+    font-weight: 500;
+    background: rgba(102, 126, 234, 0.1);
+    padding: 2px 6px;
+    border-radius: 6px;
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}

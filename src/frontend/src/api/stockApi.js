@@ -75,7 +75,7 @@ export const stockApi = {
   // 使用 Twelve Data API 搜索股票
   async searchStocksBySymbol(symbol) {
     try {
-      const apiKey = '7a2f00f6984b4c24a36501313ffd15e0';
+      const apiKey =  import.meta.env.STOCK_SEARCH_SYMBOL_KEY;
       const url = `https://api.twelvedata.com/symbol_search?symbol=${encodeURIComponent(symbol)}&apikey=${apiKey}`;
 
       const response = await fetch(url, {

@@ -20,7 +20,7 @@ class StockService {
 
   constructor() {
     this.db = require('../database/database');
-    this.API_KEY = process.env.STOCK_API_KEY;
+    this.API_KEY = process.env.STOCK_PRICE_KEY;
     this.BASE_URL = 'https://api.twelvedata.com';
 
     // // 设置定期清理缓存（每小时执行一次）

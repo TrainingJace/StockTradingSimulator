@@ -33,7 +33,7 @@ const KChart = ({ symbol, stock }) => {
 
     // ---- 数据获取 ----
     const fetchAllChartData = async (stockSymbol) => {
-        const apiKey = import.meta.env.STOCK_API_KEY ;
+        const apiKey = import.meta.env.STOCK_K_CHART_KEY;
         const timeframes = {
             daily: `https://api.twelvedata.com/time_series?symbol=${stockSymbol}&interval=30min&apikey=${apiKey}`,
             weekly: (() => {

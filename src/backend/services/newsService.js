@@ -5,7 +5,7 @@ class NewsService {
   constructor() {
     this.db = require('../database/database');
     this.API_KEY = 'd20ttppr01qvvf1k47lgd20ttppr01qvvf1k47m0'; // Finnhub API Key
-    this.ALPHA_VANTAGE_API_KEY = 'TTFO5NMW8G9LKPV6'; // Alpha Vantage API Key
+    this.ALPHA_VANTAGE_API_KEY =  process.env.NEWS_API_KEY || 'demo'; // Alpha Vantage API Key
     console.log('NewsService initialized');
   }
 
@@ -23,6 +23,7 @@ class NewsService {
 
       console.log(`📊 API Response for ${symbol}:`);
       console.log('Response status:', response.status);
+      console.log('Response data:', response.data);
       console.log('Feed length:', response.data.feed ? response.data.feed.length : 'No feed');
 
       if (!response.data.feed) {
@@ -130,7 +131,7 @@ class NewsService {
 
       // 构造主查询 - 获取最新的新闻
       const query = `
-      SELECT id, symbol, title, summary, content, source, sentiment_score, published_date, created_at
+      SELECT id, symbol, title, summary, content, source, sentiment_score, published_date, created_at, url
       FROM news
       WHERE symbol = ?
       ORDER BY published_date DESC
@@ -153,7 +154,8 @@ class NewsService {
         source: row.source,
         sentiment_score: row.sentiment_score,
         published_date: row.published_date,
-        created_at: row.created_at
+        created_at: row.created_at,
+        url: row.url
       }));
 
       console.log('Final result:', JSON.stringify(result, null, 2));

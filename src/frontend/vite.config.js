@@ -10,7 +10,9 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     define: {
       // 暴露特定的环境变量到客户端
-      'import.meta.env.STOCK_API_KEY': JSON.stringify(env.STOCK_API_KEY),
+      'import.meta.env.STOCK_PRICE_KEY': JSON.stringify(env.STOCK_PRICE_KEY),
+      'import.meta.env.STOCK_SEARCH_SYMBOL_KEY': JSON.stringify(env.STOCK_SEARCH_SYMBOL_KEY),
+      'import.meta.env.STOCK_K_CHART_KEY': JSON.stringify(env.STOCK_K_CHART_KEY),
     },
   }
 })
