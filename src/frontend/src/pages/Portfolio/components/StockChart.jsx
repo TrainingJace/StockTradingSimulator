@@ -144,22 +144,26 @@ function StockChart({ symbol, data, loading }) {
             dataKey="price"
             name=""
           />
-          {/* 买入点 */}
-          <Scatter 
-            data={buyData}
-            name="Buy"
-            fill="#43a047"
-            shape="circle"
-            dataKey="price"
-          />
-          {/* 卖出点 */}
-          <Scatter 
-            data={sellData}
-            name="Sell"
-            fill="#e53935"
-            shape="circle"
-            dataKey="price"
-          />
+          {/* 买入点 - 只在有买入数据时显示 */}
+          {buyData.length > 0 && (
+            <Scatter 
+              data={buyData}
+              name="Buy"
+              fill="#43a047"
+              shape="circle"
+              dataKey="price"
+            />
+          )}
+          {/* 卖出点 - 只在有卖出数据时显示 */}
+          {sellData.length > 0 && (
+            <Scatter 
+              data={sellData}
+              name="Sell"
+              fill="#e53935"
+              shape="circle"
+              dataKey="price"
+            />
+          )}
         </LineChart>
       </ResponsiveContainer>
       <div style={{fontSize:14, color:'#aaa', marginTop:12}}>
