@@ -1,9 +1,10 @@
-// API 统一导出
 
+// API 统一导出
 export { authApi } from './authApi.js';
 export { stockApi } from './stockApi.js';
 export { portfolioApi } from './portfolioApi.js';
 export { newsApi } from './newsApi.js';
+export { analyticsApi } from './analyticsApi.js';
 export { tradingApi } from './tradingApi.js';
 export { watchlistApi } from './watchlistApi.js';
 export { default as apiClient } from './client.js';

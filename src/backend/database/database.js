@@ -59,11 +59,11 @@ class Database {
 
       // 创建表
       await this.createTables();
-      
-      // 在测试模式下插入种子数据
-      if (process.env.MODE === 'test') {
-        await insertTestStocks(this);
-      }
+
+      // 自动插入种子股票数据
+      await insertTestStocks(this);
+      // 自动插入jason_test测试投资组合
+      // await require('./seed-data').insertTestPortfolio(this);
     } catch (error) {
       console.error('❌ Database connection failed:', error);
       throw error;
@@ -151,6 +151,7 @@ class Database {
       await this.pool.end();
     }
   }
+  
 }
 
 module.exports = new Database();

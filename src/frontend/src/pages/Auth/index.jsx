@@ -89,7 +89,7 @@ function Auth() {
           <>
             <div className="auth-header">
               <h2>📈 Login</h2>
-              <p>Welcome back to Stock Trading Simulator</p>
+              <p>Welcome back to Stock Pilot</p>
             </div>
 
             {loginErrors.submit && (

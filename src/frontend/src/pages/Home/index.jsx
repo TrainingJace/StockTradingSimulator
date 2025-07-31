@@ -10,7 +10,7 @@ function Home() {
       <div className="hero-section">
         <div className="hero-content">
           <h1 className="hero-title">
-            📈 Stock Trading Simulator
+            📈 Stock Pilot
           </h1>
           <p className="hero-subtitle">
             Practice stock trading risk-free and improve your investment skills

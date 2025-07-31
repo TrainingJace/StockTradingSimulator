@@ -8,7 +8,7 @@ const authRouter = require('./auth');
 const watchlistRouter = require('./watchlist');
 const tradingRouter = require('./trading');
 const newsRouter = require('./news');
-const analyticsRouter = require('./analytics');
+const analyticsRouter = require('./analytics'); // Import analytics router
 
 // 注册路由
 router.use('/auth', authRouter);  // 包含用户管理功能
@@ -17,7 +17,7 @@ router.use('/portfolio', portfolioRouter);
 router.use('/watchlist', watchlistRouter);
 router.use('/trading', tradingRouter);
 router.use('/news', newsRouter);
-router.use('/analytics', analyticsRouter);
+router.use('/analytics', analyticsRouter); // Register analytics route
 
 // 健康检查端点
 router.get('/health', (req, res) => {
