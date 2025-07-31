@@ -5,8 +5,6 @@ import { authApi } from '../../api/authApi';
 
 // 将结构化数据转为 prompt
 const generatePromptFromData = (data) => {
-  console.log('Generating prompt with data:', data); // 添加调试日志
-  
   const {
     totalValue = 0,
     totalReturn = 0,
@@ -54,27 +52,20 @@ const Analysis = ({ analyticsData = {} }) => {
   const [progress, setProgress] = useState(0);
   const [isCustomSearch, setIsCustomSearch] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
-  const [currentAnalyticsData, setCurrentAnalyticsData] = useState({}); // 内部状态存储数据
+  const [currentAnalyticsData, setCurrentAnalyticsData] = useState({});
 
   // 获取分析数据
   const fetchAnalyticsData = async () => {
     try {
-      console.log('Fetching analytics data...');
-      
-      // 获取用户信息
       const user = await authApi.getCurrentUser();
       if (!user || !user.data) {
         throw new Error('No user data found');
       }
 
-      // 获取分析数据
       const data = await analyticsApi.getPortfolioAnalytics();
-      console.log('Analytics data received:', data);
-      
       setCurrentAnalyticsData(data);
       return data;
     } catch (err) {
-      console.error('Failed to fetch analytics data:', err);
       setError(`Failed to load portfolio data: ${err.message}`);
       return {};
     }
@@ -92,16 +83,12 @@ const Analysis = ({ analyticsData = {} }) => {
         setProgress(prev => prev < 90 ? prev + 10 : prev);
       }, 1000);
 
-      // 使用传入的数据或当前状态中的数据
       let dataForPrompt = dataToUse || currentAnalyticsData || analyticsData;
       
-      // 如果没有数据，先获取数据
       if (!dataForPrompt || Object.keys(dataForPrompt).length === 0) {
-        console.log('No data available, fetching...');
         dataForPrompt = await fetchAnalyticsData();
       }
 
-      console.log('Using data for prompt:', dataForPrompt);
       const promptText = generatePromptFromData(dataForPrompt);
 
       const response = await fetch("https://ark.cn-beijing.volces.com/api/v3/chat/completions", {
@@ -139,7 +126,6 @@ const Analysis = ({ analyticsData = {} }) => {
       }, 500);
 
     } catch (err) {
-      console.error('Analysis error:', err);
       setError(err.message);
       setLoading(false);
       setProgress(0);
@@ -159,6 +145,30 @@ const Analysis = ({ analyticsData = {} }) => {
       setIsCustomSearch(true);
       setHasUserInteracted(true);
       
+      // 获取当前投资组合数据用于上下文
+      let contextData = currentAnalyticsData || analyticsData;
+      if (!contextData || Object.keys(contextData).length === 0) {
+        contextData = await fetchAnalyticsData();
+      }
+      
+      // 构建包含用户投资组合信息的提示词
+      const contextPrompt = `
+Based on the user's current portfolio data:
+- Total Portfolio Value: $${contextData.totalValue || 0}
+- Total Return: $${contextData.totalReturn || 0} (${contextData.returnPercentage || 0}%)
+- Current Holdings: ${contextData.assetDistribution?.map(asset => `${asset.symbol} (${asset.percent}%)`).join(', ') || 'No holdings'}
+- Recent Performance: ${contextData.dailyReturns?.length > 0 ? 'Available' : 'No data'}
+
+User Question: ${searchQuery}
+
+Please provide a personalized analysis and actionable advice based on their specific portfolio situation. Focus on:
+1. How this relates to their current holdings and performance
+2. Specific actions they could take given their portfolio composition
+3. Risk considerations based on their current diversification
+4. Timing considerations based on their recent performance trends
+
+Provide practical, actionable insights in about 300 words.`;
+    
       const response = await fetch("https://ark.cn-beijing.volces.com/api/v3/chat/completions", {
         method: "POST",
         headers: {
@@ -172,7 +182,7 @@ const Analysis = ({ analyticsData = {} }) => {
               role: "user",
               content: [{ 
                 type: "text", 
-                text: `${searchQuery} - Please analyze this query in context of stock market and portfolio management. Provide a comprehensive analysis in about 300 words.`
+                text: contextPrompt
               }]
             }
           ]
@@ -193,7 +203,6 @@ const Analysis = ({ analyticsData = {} }) => {
       }
       
     } catch (err) {
-      console.error('Search error:', err);
       setError(err.message);
     } finally {
       setSearchLoading(false);
@@ -221,14 +230,10 @@ const Analysis = ({ analyticsData = {} }) => {
 
   // 组件挂载时获取数据
   useEffect(() => {
-    console.log('Component mounted, analyticsData:', analyticsData);
-    
-    // 如果有传入的数据就使用，否则自己获取
     if (analyticsData && Object.keys(analyticsData).length > 0) {
       setCurrentAnalyticsData(analyticsData);
       fetchStockAnalysis(analyticsData);
     } else {
-      // 自己获取数据然后分析
       fetchAnalyticsData().then(data => {
         if (data && Object.keys(data).length > 0) {
           fetchStockAnalysis(data);
@@ -240,7 +245,6 @@ const Analysis = ({ analyticsData = {} }) => {
   // 监听传入数据的变化
   useEffect(() => {
     if (analyticsData && Object.keys(analyticsData).length > 0) {
-      console.log('AnalyticsData updated:', analyticsData);
       setCurrentAnalyticsData(analyticsData);
     }
   }, [analyticsData]);
@@ -250,13 +254,6 @@ const Analysis = ({ analyticsData = {} }) => {
       <div className="page-header">
         <h1>Intelligent analysis</h1>
         <p>Generated by AI, for reference only</p>
-        
-        {/* 显示当前数据状态用于调试 */}
-        {process.env.NODE_ENV === 'development' && (
-          <div style={{ fontSize: '12px', color: '#666', marginTop: '10px' }}>
-            Debug: Current data keys: {Object.keys(currentAnalyticsData).join(', ')}
-          </div>
-        )}
         
         {/* 搜索框 */}
         <div style={{
@@ -317,6 +314,58 @@ const Analysis = ({ analyticsData = {} }) => {
                 Default
               </button>
             )}
+          </div>
+          
+          {/* 智能建议按钮 */}
+          <div style={{ 
+            marginTop: '15px', 
+            display: 'flex', 
+            flexWrap: 'wrap', 
+            gap: '8px' 
+          }}>
+            <span style={{ 
+              color: '#666', 
+              fontSize: '14px', 
+              alignSelf: 'center',
+              marginRight: '10px'
+            }}>
+              Quick questions:
+            </span>
+            {[
+              'Should I rebalance my portfolio?',
+              'What are my biggest risks right now?',
+              'Which stocks should I consider selling?',
+              'How can I improve diversification?',
+              'Is this a good time to buy more?'
+            ].map((suggestion, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  setSearchQuery(suggestion);
+                  setHasUserInteracted(true);
+                }}
+                style={{
+                  padding: '6px 12px',
+                  fontSize: '13px',
+                  backgroundColor: '#e9ecef',
+                  color: '#495057',
+                  border: '1px solid #dee2e6',
+                  borderRadius: '15px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.backgroundColor = '#007bff';
+                  e.target.style.color = 'white';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.backgroundColor = '#e9ecef';
+                  e.target.style.color = '#495057';
+                }}
+              >
+                {suggestion}
+              </button>
+            ))}
           </div>
         </div>
       </div>
