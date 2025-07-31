@@ -55,7 +55,7 @@ const SellStockModal = ({ isOpen, onClose, stock, holdings, onSellSuccess }) => 
 
       if (response.success) {
         // 显示成功消息
-        alert(`成功卖出 ${shares} 股 ${stock.symbol}！\n总收入：$${estimatedTotal}`);
+        alert(`Successfully sold ${shares} shares of ${stock.symbol}!\nTotal proceeds: $${estimatedTotal}`);
         
         // 成功后的回调
         if (onSellSuccess) {

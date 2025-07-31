@@ -55,15 +55,15 @@ export const useForm = (initialValues = {}, validationRules = {}, onSubmit) => {
 
     // 必填验证
     if (rules.required && !validateRequired(value)) {
-      error = rules.requiredMessage || `${name}是必填项`;
+      error = rules.requiredMessage || `${name} is required`;
     }
     // 邮箱验证
     else if (rules.email && value && !validateEmail(value)) {
-      error = rules.emailMessage || '请输入有效的邮箱地址';
+      error = rules.emailMessage || 'Please enter a valid email address';
     }
     // 密码验证
     else if (rules.password && value && !validatePassword(value)) {
-      error = rules.passwordMessage || '密码至少需要6位';
+      error = rules.passwordMessage || 'Password must be at least 6 characters';
     }
     // 自定义验证
     else if (rules.custom && value) {
@@ -121,7 +121,7 @@ export const useForm = (initialValues = {}, validationRules = {}, onSubmit) => {
         await onSubmit(values);
       }
     } catch (error) {
-      console.error('表单提交错误:', error);
+      console.error('Form submission error:', error);
       // 可以设置全局错误或传递给父组件
     } finally {
       setIsSubmitting(false);
@@ -169,13 +169,13 @@ export const useLoginForm = (onSubmit) => {
   const validationRules = {
     username: {
       required: true,
-      requiredMessage: '请输入用户名'
+      requiredMessage: 'Please enter username'
     },
     password: {
       required: true,
       password: true,
-      requiredMessage: '请输入密码',
-      passwordMessage: '密码至少需要6位'
+      requiredMessage: 'Please enter password',
+      passwordMessage: 'Password must be at least 6 characters'
     }
   };
 
@@ -195,26 +195,26 @@ export const useRegisterForm = (onSubmit) => {
   const validationRules = {
     username: {
       required: true,
-      requiredMessage: '请输入用户名'
+      requiredMessage: 'Please enter username'
     },
     email: {
       required: true,
       email: true,
-      requiredMessage: '请输入邮箱',
-      emailMessage: '请输入有效的邮箱地址'  
+      requiredMessage: 'Please enter email',
+      emailMessage: 'Please enter a valid email address'  
     },
     password: {
       required: true,
       password: true,
-      requiredMessage: '请输入密码',
-      passwordMessage: '密码至少需要6位'
+      requiredMessage: 'Please enter password',
+      passwordMessage: 'Password must be at least 6 characters'
     },
     confirmPassword: {
       required: true,
-      requiredMessage: '请确认密码',
+      requiredMessage: 'Please confirm password',
       custom: (value, allValues) => {
         if (value !== allValues.password) {
-          return '两次输入的密码不一致';
+          return 'Passwords do not match';
         }
         return null;
       }
