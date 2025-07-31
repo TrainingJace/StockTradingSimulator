@@ -1,3 +1,5 @@
+const portfolioService = require('./portfolioService');
+
 // 分析服务实现
 class AnalyticsService {
   // Daily settlement: write current portfolio snapshot to portfolio_history
@@ -53,7 +55,10 @@ class AnalyticsService {
       let endDate = params.endDate;
       let symbol = params.symbol;
       // 总资产：positions表所有持仓市值之和
-      const totalValueResult = await db.execute(`SELECT SUM(shares * avg_cost) AS totalValue FROM positions WHERE portfolio_id IN (${portfolioIds.join(',')})`);
+      // const totalValueResult = await db.execute(`SELECT SUM(shares * avg_cost) AS totalValue FROM positions WHERE portfolio_id IN (${portfolioIds.join(',')})`);
+      const portfolio = await portfolioService.getPortfolioByUserId(userId);
+      const totalValueResult = portfolio["total_value"];
+      console.log('Total Portfolio Value:', totalValueResult);
       // 总收益：portfolios表的total_return之和
       const totalReturnResult = await db.execute(`SELECT SUM(total_return) AS totalReturn FROM portfolios WHERE id IN (${portfolioIds.join(',')})`);
       // 收益率：portfolios表的平均total_return_percent
@@ -99,7 +104,7 @@ class AnalyticsService {
       }
 
       return {
-        totalValue: totalValueResult[0]?.totalValue || 0,
+        totalValue: totalValueResult || 0,
         totalReturn: totalReturnResult[0]?.totalReturn || 0,
         returnPercentage: returnPercentageResult[0]?.returnPercentage || 0,
         assetDistribution: assetDistributionResult,

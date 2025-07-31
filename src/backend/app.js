@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 //自动运行database中的news.js文件
-require('./database/news.js');
+// require('./database/news.js');
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 
 console.log('Loading .env from:', path.resolve(__dirname, '../../.env'));
