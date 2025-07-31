@@ -119,12 +119,14 @@ class AuthService {
       // 创建用户的初始投资组合
       const portfolioService = require('./portfolioService');
       await portfolioService.createPortfolio(userId, 50000);
-      await tradingService.executeBuyOrder(userId, 'MSFT', 10, 200, '2025-07-22'); // 示例：购买10股AAPL股票
-      await tradingService.executeSellOrder(userId, 'MSFT', 5, 220, '2025-07-23'); // 示例：卖出5股AAPL股票
-      await tradingService.executeBuyOrder(userId, 'MSFT', 3, 210, '2025-07-24'); // 示例：购买3股AAPL股票
-      await tradingService.executeBuyOrder(userId, 'GOOGL', 5, 180, '2025-07-17'); // 示例：购买5股GOOGL股票
-      await tradingService.executeSellOrder(userId, 'GOOGL', 2, 170, '2025-07-21'); // 示例：卖出2股GOOGL股票
-      await tradingService.executeBuyOrder(userId, 'GOOGL', 3, 175, '2025-07-24'); // 示例：购买8股MSFT股票
+      await tradingService.executeBuyOrder(userId, 'MSFT', 10, 505, '2025-07-22'); // 示例：购买10股AAPL股票
+      await tradingService.executeSellOrder(userId, 'MSFT', 5, 505.8, '2025-07-23'); // 示例：卖出5股AAPL股票
+      await tradingService.executeBuyOrder(userId, 'MSFT', 3, 510.8, '2025-07-24'); // 示例：购买3股AAPL股票
+      await tradingService.executeBuyOrder(userId, 'GOOGL', 5, 184.7, '2025-07-17'); // 示例：购买5股GOOGL股票
+      await tradingService.executeSellOrder(userId, 'GOOGL', 2, 191, '2025-07-21'); // 示例：卖出2股GOOGL股票
+      await tradingService.executeBuyOrder(userId, 'GOOGL', 3, 193, '2025-07-24'); // 示例：购买8股MSFT股票
+      await tradingService.executeBuyOrder(userId, 'TSLA', 3, 332, '2025-07-23'); // 示例：卖出2股GOOGL股票
+      await tradingService.executeSellOrder(userId, 'TSLA', 2, 306, '2025-07-24'); // 示例：购买8股MSFT股票
 
       // 返回创建的用户（不包含密码）
       const newUser = await this.getUserById(userId);

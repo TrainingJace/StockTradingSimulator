@@ -78,28 +78,23 @@ class AnalyticsService {
           change: Number(percentChange)
         };
       });
-      const topPerformersResult = [...perfArr]
+      // 表现最好：只显示正收益的股票，按涨幅从高到低排序
+      const topPerformersResult = perfArr
+        .filter(p => p.change > 0)
         .sort((a, b) => b.change - a.change)
         .slice(0, 3);
-      const worstPerformersResult = [...perfArr]
+      // 表现最差：只显示负收益的股票，按跌幅从低到高排序
+      const worstPerformersResult = perfArr
+        .filter(p => p.change < 0)
         .sort((a, b) => a.change - b.change)
         .slice(0, 3);
-      // 每日资产变化：用 portfolios 表的最新数据去更新 portfolio_history，再从 portfolio_history 表查询每日资产变化
-      // 1. portfolios 表的 total_value/cash_balance 已在每次交易后同步写入 portfolio_history
-      // 2. 查询 portfolio_history 表，支持区间
-      let dailySql = `SELECT date, total_value, cash_balance FROM portfolio_history WHERE portfolio_id IN (${portfolioIds.join(',')})`;
-      let dailyParams = [];
-      if (startDate && endDate && typeof startDate === 'string' && typeof endDate === 'string') {
-        dailySql += ' AND date >= ? AND date <= ?';
-        dailyParams.push(startDate, endDate);
-      }
-      dailySql += ' ORDER BY date';
-      const dailyReturnsResult = await db.execute(dailySql, dailyParams);
+      // 每日资产变化：基于实时数据计算
+      const dailyReturnsResult = await this.calculateRealTimeDailyReturns(portfolioIds, startDate, endDate);
       // 单只股票详细分析
       let stockDetail = null;
       if (symbol) {
         const stockRows = await db.execute(`SELECT * FROM positions WHERE portfolio_id IN (${portfolioIds.join(',')}) AND symbol = ?`, [symbol]);
-        const priceHistory = await db.execute(`SELECT date, close_price FROM stock_history WHERE symbol = ? ORDER BY date`, [symbol]);
+        const priceHistory = await db.execute(`SELECT DATE(price_time) as date, close_price FROM stock_real_history WHERE symbol = ? ORDER BY price_time`, [symbol]);
         stockDetail = { position: stockRows[0] || null, priceHistory };
       }
 
@@ -374,6 +369,142 @@ class AnalyticsService {
     } catch (error) {
       console.error('Error generating performance summary:', error);
       throw error;
+    }
+  }
+
+  // 基于实时数据计算每日回报率
+  async calculateRealTimeDailyReturns(portfolioIds, startDate, endDate) {
+    try {
+      const db = require('../database/database');
+      
+      // 获取指定时间范围内的所有独特日期（从交易记录和股票历史数据中）
+      let datesSql = `
+        SELECT DISTINCT DATE(timestamp) as date FROM transactions 
+        WHERE portfolio_id IN (${portfolioIds.join(',')})
+        UNION
+        SELECT DISTINCT DATE(price_time) as date FROM stock_real_history
+      `;
+      const datesParams = [];
+      
+      if (startDate && endDate && typeof startDate === 'string' && typeof endDate === 'string') {
+        datesSql = `
+          SELECT DISTINCT DATE(timestamp) as date FROM transactions 
+          WHERE portfolio_id IN (${portfolioIds.join(',')}) AND DATE(timestamp) >= ? AND DATE(timestamp) <= ?
+          UNION
+          SELECT DISTINCT DATE(price_time) as date FROM stock_real_history
+          WHERE DATE(price_time) >= ? AND DATE(price_time) <= ?
+        `;
+        datesParams.push(startDate, endDate, startDate, endDate);
+      }
+      
+      datesSql += ' ORDER BY date';
+      
+      const dateRows = await db.execute(datesSql, datesParams);
+      const dates = dateRows.map(row => row.date);
+      
+      const dailyReturns = [];
+      
+      for (let i = 0; i < dates.length; i++) {
+        const date = dates[i];
+        const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
+        
+        // 计算该日期的投资组合总价值
+        const portfolioValue = await this.calculatePortfolioValueAtDate(portfolioIds, dateStr);
+        
+        // 计算日收益率（与前一日比较）
+        let dailyReturn = 0;
+        let dailyReturnPercent = 0;
+        
+        if (i > 0) {
+          const prevValue = dailyReturns[i - 1].total_value;
+          if (prevValue > 0) {
+            dailyReturn = portfolioValue - prevValue;
+            dailyReturnPercent = (dailyReturn / prevValue) * 100;
+          }
+        }
+        
+        dailyReturns.push({
+          date: dateStr,
+          total_value: portfolioValue,
+          daily_return: dailyReturn,
+          daily_return_percent: dailyReturnPercent
+        });
+      }
+      
+      return dailyReturns;
+    } catch (error) {
+      console.error('Error calculating real-time daily returns:', error);
+      return [];
+    }
+  }
+
+  // 计算特定日期的投资组合价值
+  async calculatePortfolioValueAtDate(portfolioIds, date) {
+    try {
+      const db = require('../database/database');
+      
+      // 获取该日期及之前的所有交易记录，计算各股票的持仓数量
+      const transactionsSql = `
+        SELECT symbol, type, shares, price 
+        FROM transactions 
+        WHERE portfolio_id IN (${portfolioIds.join(',')}) 
+        AND DATE(timestamp) <= ?
+        ORDER BY timestamp
+      `;
+      
+      const transactions = await db.execute(transactionsSql, [date]);
+      
+      // 计算每个股票的净持仓
+      const positions = {};
+      let totalCash = 0;
+      
+      // 获取初始现金余额
+      const portfolioSql = `SELECT SUM(initial_balance) as totalCash FROM portfolios WHERE id IN (${portfolioIds.join(',')})`;
+      const portfolioResult = await db.execute(portfolioSql);
+      totalCash = portfolioResult[0]?.totalCash || 500000; // 默认50万
+      
+      // 处理交易记录
+      for (const transaction of transactions) {
+        const { symbol, type, shares, price } = transaction;
+        
+        if (!positions[symbol]) {
+          positions[symbol] = 0;
+        }
+        
+        if (type === 'BUY') {
+          positions[symbol] += shares;
+          totalCash -= shares * price;
+        } else if (type === 'SELL') {
+          positions[symbol] -= shares;
+          totalCash += shares * price;
+        }
+      }
+      
+      // 获取该日期的股票价格
+      let totalStockValue = 0;
+      for (const [symbol, shares] of Object.entries(positions)) {
+        if (shares > 0) {
+          // 查找该日期最接近的股票价格
+          const priceSql = `
+            SELECT close_price 
+            FROM stock_real_history 
+            WHERE symbol = ? AND DATE(price_time) <= ?
+            ORDER BY price_time DESC
+            LIMIT 1
+          `;
+          
+          const priceResult = await db.execute(priceSql, [symbol, date]);
+          const stockPrice = priceResult[0]?.close_price || 0;
+          
+          totalStockValue += shares * stockPrice;
+        }
+      }
+      
+      return totalCash + totalStockValue;
+      
+    } catch (error) {
+      console.error('Error calculating portfolio value at date:', error);
+      return 0;
     }
   }
 }

@@ -13,7 +13,7 @@ function Home() {
             📈 Stock Pilot
           </h1>
           <p className="hero-subtitle">
-            Practice stock trading risk-free and improve your investment skills
+           Navigate Your Investments with Precision
           </p>
           
           {isAuthenticated() ? (
@@ -32,7 +32,7 @@ function Home() {
           ) : (
             <div className="guest-section">
               <p className="guest-message">
-                Start your simulated trading journey now
+                Navigate Your Investments with Precision Now
               </p>
               <div className="action-buttons">
                 <Link to="/auth" className="cta-button primary">

@@ -159,7 +159,7 @@ async function insertTestStocks(database) {
   try {
     console.log('📋 Inserting test stock data...');
     // 仅插入前三个测试股票
-    testStocks = testStocks.slice(0, 2);
+    testStocks = testStocks.slice(0, 4);
     // 检查是否已经有股票数据
     const existingStocks = await database.execute('SELECT COUNT(*) as count FROM stocks');
     if (existingStocks[0].count > 0) {

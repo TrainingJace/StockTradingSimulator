@@ -465,7 +465,7 @@ const Analytics = () => {
                   <path d="M5 9.2H8V19H5V9.2ZM10.6 5H13.4V19H10.6V5ZM16.2 13H19V19H16.2V13Z" fill="currentColor"/>
                 </svg>
               </span>
-              Top Performers
+              Top Gainers
             </h3>
             <ul style={{ 
               padding: 0, 
@@ -481,10 +481,10 @@ const Analytics = () => {
                   alignItems: 'center',
                   paddingBottom: '0.75rem',
                   borderBottom: `1px solid ${colors.border}`,
-                  ':last-child': {
-                    borderBottom: 'none',
-                    paddingBottom: '0'
-                  }
+                  // ':last-child': {
+                  //   borderBottom: 'none',
+                  //   paddingBottom: '0'
+                  // }
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span style={{ 
@@ -536,7 +536,7 @@ const Analytics = () => {
                   <path d="M19 13H16V3H19V13ZM13 8H10V3H13V8ZM7 19H4V3H7V19Z" fill="currentColor"/>
                 </svg>
               </span>
-              Worst Performers
+              Top Losers
             </h3>
             <ul style={{ 
               padding: 0, 
@@ -552,10 +552,10 @@ const Analytics = () => {
                   alignItems: 'center',
                   paddingBottom: '0.75rem',
                   borderBottom: `1px solid ${colors.border}`,
-                  ':last-child': {
-                    borderBottom: 'none',
-                    paddingBottom: '0'
-                  }
+                  // ':last-child': {
+                  //   borderBottom: 'none',
+                  //   paddingBottom: '0'
+                  // }
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span style={{ 
