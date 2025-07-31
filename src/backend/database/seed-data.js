@@ -5,24 +5,24 @@
 
 // 测试股票数据
 let testStocks = [
-  {
-    symbol: 'AAPL',
-    name: 'Apple Inc.',
-    sector: 'Technology',
-    industry: 'Consumer Electronics',
-    description: 'Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories worldwide.',
-    cik: '0000320193',
-    exchange: 'NASDAQ',
-    currency: 'USD',
-    country: 'USA',
-    address: 'One Apple Park Way, Cupertino, CA 95014, United States',
-    officialSite: 'https://www.apple.com',
-    marketCapitalization: '3000000000000',
-    ebitda: '120000000000',
-    peRatio: '28.5',
-    pegRatio: '2.1',
-    bookValue: '4.25'
-  },
+  // {
+  //   symbol: 'AAPL',
+  //   name: 'Apple Inc.',
+  //   sector: 'Technology',
+  //   industry: 'Consumer Electronics',
+  //   description: 'Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories worldwide.',
+  //   cik: '0000320193',
+  //   exchange: 'NASDAQ',
+  //   currency: 'USD',
+  //   country: 'USA',
+  //   address: 'One Apple Park Way, Cupertino, CA 95014, United States',
+  //   officialSite: 'https://www.apple.com',
+  //   marketCapitalization: '3000000000000',
+  //   ebitda: '120000000000',
+  //   peRatio: '28.5',
+  //   pegRatio: '2.1',
+  //   bookValue: '4.25'
+  // },
   {
     symbol: 'GOOGL',
     name: 'Alphabet Inc.',
@@ -159,7 +159,7 @@ async function insertTestStocks(database) {
   try {
     console.log('📋 Inserting test stock data...');
     // 仅插入前三个测试股票
-    testStocks = testStocks.slice(0, 3);
+    testStocks = testStocks.slice(0, 2);
     // 检查是否已经有股票数据
     const existingStocks = await database.execute('SELECT COUNT(*) as count FROM stocks');
     if (existingStocks[0].count > 0) {
