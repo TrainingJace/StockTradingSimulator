@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+//自动运行database中的news.js文件
+require('./database/news.js');
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 
 console.log('Loading .env from:', path.resolve(__dirname, '../../.env'));
@@ -42,22 +44,24 @@ app.get('/', (req, res) => {
 
 // 404 处理
 app.use('*', (req, res) => {
-  res.status(404).json({ 
-    success: false, 
+  res.status(404).json({
+    success: false,
     error: 'Endpoint not found',
-    path: req.originalUrl 
+    path: req.originalUrl
   });
 });
 
 // 全局错误处理中间件
 app.use((error, req, res, next) => {
   console.error('Global error handler:', error);
-  res.status(500).json({ 
-    success: false, 
+  res.status(500).json({
+    success: false,
     error: 'Internal server error',
     message: process.env.MODE === 'test' ? error.message : 'Something went wrong'
   });
 });
+
+
 
 app.listen(PORT, () => {
   console.log(`🚀 Stock Trading Simulator API running on port ${PORT}`);
