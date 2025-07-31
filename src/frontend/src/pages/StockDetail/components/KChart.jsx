@@ -33,7 +33,7 @@ const KChart = ({ symbol, stock }) => {
 
     // ---- 数据获取 ----
     const fetchAllChartData = async (stockSymbol) => {
-        const apiKey = 'ea919d77b80d47ed8e8031cf6e894c68';
+        const apiKey = import.meta.env.STOCK_API_KEY ;
         const timeframes = {
             daily: `https://api.twelvedata.com/time_series?symbol=${stockSymbol}&interval=30min&apikey=${apiKey}`,
             weekly: (() => {
@@ -52,6 +52,7 @@ const KChart = ({ symbol, stock }) => {
             setLoading(prev => ({ ...prev, [tf]: true }));
             try {
                 const res = await fetch(timeframes[tf]);
+                console.log(`response for ${tf} chart:`, res);
                 const json = await res.json();
                 const processed = (json.values || []).map(v => ({
                     datetime: v.datetime,
@@ -61,6 +62,7 @@ const KChart = ({ symbol, stock }) => {
                     close: parseFloat(v.close),
                     volume: parseInt(v.volume)
                 })).reverse();
+                console.log(`Fetched ${tf} K-data for ${stockSymbol}:`, processed);
                 setChartData(prev => ({ ...prev, [tf]: processed }));
             } catch (e) {
                 console.error(`❌ Failed to fetch ${tf} chart`, e);
