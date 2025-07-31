@@ -40,34 +40,29 @@ const Analytics = () => {
     setLoading(true);
     authApi.getCurrentUser()
       .then(user => {
-        const userSimDate = user?.simulation_date || user?.simulationDate;
-        return analyticsApi.getPortfolioAnalytics({});
-      })
-      .then(allData => {
-        let maxDate = null;
-        if (allData.dailyReturns && allData.dailyReturns.length > 0) {
-          maxDate = allData.dailyReturns.reduce((max, cur) => cur.date > max ? cur.date : max, allData.dailyReturns[0].date);
-        }
-        setSimulationDate(maxDate);
+        // 模拟时间始终为当前时间
+        const now = new Date();
+        const nowStr = now.toISOString().slice(0, 10);
+        setSimulationDate(nowStr);
         let params = {};
-        if (selectedRange !== 'all' && maxDate) {
-          const simDate = new Date(maxDate);
+        if (selectedRange !== 'all') {
           let startDate = null;
           if (selectedRange === 'week') {
-            startDate = new Date(simDate.getTime() - 7 * 24 * 3600 * 1000);
+            startDate = new Date(now.getTime() - 7 * 24 * 3600 * 1000);
           } else if (selectedRange === 'month') {
-            startDate = new Date(simDate.getTime() - 30 * 24 * 3600 * 1000);
+            startDate = new Date(now.getTime() - 30 * 24 * 3600 * 1000);
           } else if (selectedRange === '3month') {
-            startDate = new Date(simDate.getTime() - 90 * 24 * 3600 * 1000);
+            startDate = new Date(now.getTime() - 90 * 24 * 3600 * 1000);
           } else if (selectedRange === 'ytd') {
-            startDate = new Date(simDate.getFullYear(), 0, 1);
+            startDate = new Date(now.getFullYear(), 0, 1);
           }
           if (startDate) {
             params.startDate = startDate.toISOString().slice(0, 10);
-            params.endDate = maxDate;
+            params.endDate = nowStr;
           }
         }
-        return analyticsApi.getPortfolioAnalytics(selectedRange === 'all' ? {} : params);
+        // 传递 startDate 和 endDate 参数
+        return analyticsApi.getPortfolioAnalytics(selectedRange === 'all' ? {} : { startDate: params.startDate, endDate: params.endDate });
       })
       .then(data => {
         setAnalyticsData(data);
@@ -619,53 +614,90 @@ const Analytics = () => {
           }}>
             <ChartErrorBoundary>
               {Array.isArray(analyticsData.assetDistribution) && analyticsData.assetDistribution.length > 0 ? (
-                <Pie
-                  data={{
-                    labels: analyticsData.assetDistribution.map(i => i.symbol),
-                    datasets: [{
-                      data: analyticsData.assetDistribution.map(i => Number(i.percent)),
-                      backgroundColor: colors.chartColors,
-                      borderColor: colors.cardBg,
-                      borderWidth: 2
-                    }]
-                  }}
-                  options={{ 
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { 
-                      legend: { 
-                        position: 'bottom', 
-                        labels: { 
-                          color: colors.textPrimary, 
-                          font: { 
-                            size: 13, 
-                            weight: '500' 
-                          },
-                          padding: 20,
-                          usePointStyle: true,
-                          pointStyle: 'circle'
-                        } 
-                      },
-                      tooltip: {
-                        backgroundColor: colors.textPrimary,
-                        titleFont: {
-                          size: 14,
-                          weight: '600'
-                        },
-                        bodyFont: {
-                          size: 13
-                        },
-                        padding: 12,
-                        usePointStyle: true,
-                        callbacks: {
-                          label: function(context) {
-                            return `${context.label}: ${context.raw}%`;
-                          }
+                (() => {
+                  // 过滤资产分布到选定区间（与折线图一致，按 dailyReturns 日期过滤）
+                  let filteredAssets = analyticsData.assetDistribution;
+                  if (selectedRange !== 'all' && simulationDate && analyticsData.dailyReturns) {
+                    let endDate = simulationDate;
+                    let startDate = null;
+                    const end = new Date(endDate);
+                    if (selectedRange === 'week') {
+                      startDate = new Date(end.getTime() - 7 * 24 * 3600 * 1000);
+                    } else if (selectedRange === 'month') {
+                      startDate = new Date(end.getTime() - 30 * 24 * 3600 * 1000);
+                    } else if (selectedRange === '3month') {
+                      startDate = new Date(end.getTime() - 90 * 24 * 3600 * 1000);
+                    } else if (selectedRange === 'ytd') {
+                      startDate = new Date(end.getFullYear(), 0, 1);
+                    }
+                    if (startDate) {
+                      const startStr = startDate.toISOString().slice(0, 10);
+                      // 获取区间内的 symbol 列表（从 dailyReturns）
+                      const validDates = analyticsData.dailyReturns.filter(d => d.date >= startStr && d.date <= endDate);
+                      // 这里假设 assetDistribution 每天都一样，实际如需精确应后端返回区间资产分布
+                      // 仅保留有持仓的 symbol
+                      const validSymbols = new Set();
+                      validDates.forEach(d => {
+                        if (d.symbols && Array.isArray(d.symbols)) {
+                          d.symbols.forEach(s => validSymbols.add(s));
                         }
+                      });
+                      // 如果 dailyReturns 没有 symbols 字段，则直接用 assetDistribution
+                      if (validSymbols.size > 0) {
+                        filteredAssets = filteredAssets.filter(a => validSymbols.has(a.symbol));
                       }
                     }
-                  }}
-                />
+                  }
+                  return (
+                    <Pie
+                      data={{
+                        labels: filteredAssets.map(i => i.symbol),
+                        datasets: [{
+                          data: filteredAssets.map(i => Number(i.percent)),
+                          backgroundColor: colors.chartColors,
+                          borderColor: colors.cardBg,
+                          borderWidth: 2
+                        }]
+                      }}
+                      options={{ 
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { 
+                          legend: { 
+                            position: 'bottom', 
+                            labels: { 
+                              color: colors.textPrimary, 
+                              font: { 
+                                size: 13, 
+                                weight: '500' 
+                              },
+                              padding: 20,
+                              usePointStyle: true,
+                              pointStyle: 'circle'
+                            } 
+                          },
+                          tooltip: {
+                            backgroundColor: colors.textPrimary,
+                            titleFont: {
+                              size: 14,
+                              weight: '600'
+                            },
+                            bodyFont: {
+                              size: 13
+                            },
+                            padding: 12,
+                            usePointStyle: true,
+                            callbacks: {
+                              label: function(context) {
+                                return `${context.label}: ${context.raw}%`;
+                              }
+                            }
+                          }
+                        }
+                      }}
+                    />
+                  );
+                })()
               ) : (
                 <div style={{ 
                   textAlign: 'center', 
@@ -725,84 +757,108 @@ const Analytics = () => {
           }}>
             <ChartErrorBoundary>
               {analyticsData.dailyReturns && Array.isArray(analyticsData.dailyReturns) && analyticsData.dailyReturns.length > 0 ? (
-                <Line
-                  data={{
-                    labels: analyticsData.dailyReturns.map(d => d.date),
-                    datasets: [{
-                      label: 'Portfolio Value',
-                      data: analyticsData.dailyReturns.map(d => Number(d.value !== undefined ? d.value : d.total_value)),
-                      borderColor: colors.primary,
-                      backgroundColor: `${colors.primary}10`,
-                      tension: 0.4,
-                      pointRadius: 3,
-                      fill: true,
-                      borderWidth: 2,
-                      pointBackgroundColor: colors.cardBg,
-                      pointBorderColor: colors.primary,
-                      pointHoverRadius: 5,
-                      pointHoverBackgroundColor: colors.primary,
-                      pointHoverBorderColor: colors.cardBg,
-                      pointHoverBorderWidth: 2
-                    }]
-                  }}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { 
-                      legend: { 
-                        display: true,
-                        labels: {
-                          color: colors.textPrimary,
-                          font: {
-                            size: 13,
-                            weight: '500'
+                (() => {
+                  // 过滤 dailyReturns 到选定区间
+                  let filteredReturns = analyticsData.dailyReturns;
+                  if (selectedRange !== 'all' && simulationDate) {
+                    let endDate = simulationDate;
+                    let startDate = null;
+                    const end = new Date(endDate);
+                    if (selectedRange === 'week') {
+                      startDate = new Date(end.getTime() - 7 * 24 * 3600 * 1000);
+                    } else if (selectedRange === 'month') {
+                      startDate = new Date(end.getTime() - 30 * 24 * 3600 * 1000);
+                    } else if (selectedRange === '3month') {
+                      startDate = new Date(end.getTime() - 90 * 24 * 3600 * 1000);
+                    } else if (selectedRange === 'ytd') {
+                      startDate = new Date(end.getFullYear(), 0, 1);
+                    }
+                    if (startDate) {
+                      const startStr = startDate.toISOString().slice(0, 10);
+                      filteredReturns = filteredReturns.filter(d => d.date >= startStr && d.date <= endDate);
+                    }
+                  }
+                  return (
+                    <Line
+                      data={{
+                        labels: filteredReturns.map(d => d.date),
+                        datasets: [{
+                          label: 'Portfolio Value',
+                          data: filteredReturns.map(d => Number(d.value !== undefined ? d.value : d.total_value)),
+                          borderColor: colors.primary,
+                          backgroundColor: `${colors.primary}10`,
+                          tension: 0.4,
+                          pointRadius: 3,
+                          fill: true,
+                          borderWidth: 2,
+                          pointBackgroundColor: colors.cardBg,
+                          pointBorderColor: colors.primary,
+                          pointHoverRadius: 5,
+                          pointHoverBackgroundColor: colors.primary,
+                          pointHoverBorderColor: colors.cardBg,
+                          pointHoverBorderWidth: 2
+                        }]
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { 
+                          legend: { 
+                            display: true,
+                            labels: {
+                              color: colors.textPrimary,
+                              font: {
+                                size: 13,
+                                weight: '500'
+                              },
+                              usePointStyle: true,
+                              padding: 20
+                            }
                           },
-                          usePointStyle: true,
-                          padding: 20
-                        }
-                      },
-                      tooltip: {
-                        backgroundColor: colors.textPrimary,
-                        titleFont: {
-                          size: 14,
-                          weight: '600'
+                          tooltip: {
+                            backgroundColor: colors.textPrimary,
+                            titleFont: {
+                              size: 14,
+                              weight: '600'
+                            },
+                            bodyFont: {
+                              size: 13
+                            },
+                            padding: 12,
+                            usePointStyle: true,
+                            callbacks: {
+                              label: function(context) {
+                                return `$${context.raw.toLocaleString()}`;
+                              }
+                            }
+                          }
                         },
-                        bodyFont: {
-                          size: 13
-                        },
-                        padding: 12,
-                        usePointStyle: true,
-                        callbacks: {
-                          label: function(context) {
-                            return `$${context.raw.toLocaleString()}`;
+                        scales: {
+                          y: { 
+                            ticks: { 
+                              callback: v => `$${v}`,
+                              color: colors.textSecondary
+                            }, 
+                            beginAtZero: false, 
+                            grid: { 
+                              color: colors.border,
+                              drawBorder: false
+                            } 
+                          },
+                          x: { 
+                            grid: { 
+                              color: colors.border,
+                              drawBorder: false
+                            },
+                            ticks: {
+                              color: colors.textSecondary
+                            }
                           }
                         }
-                      }
-                    },
-                    scales: {
-                      y: { 
-                        ticks: { 
-                          callback: v => `$${v}`,
-                          color: colors.textSecondary
-                        }, 
-                        beginAtZero: false, 
-                        grid: { 
-                          color: colors.border,
-                          drawBorder: false
-                        } 
-                      },
-                      x: { 
-                        grid: { 
-                          color: colors.border,
-                          drawBorder: false
-                        },
-                        ticks: {
-                          color: colors.textSecondary
-                        }
-                      }
-                    }
-                  }}
-                />
+                      }}
+                    />
+                  );
+                })()
               ) : (
                 <div style={{ 
                   textAlign: 'center', 

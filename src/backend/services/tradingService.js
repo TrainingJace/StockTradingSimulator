@@ -152,6 +152,29 @@ class TradingService {
         // 不抛出错误，因为交易已经成功提交
       }
 
+      // 10. 写入 portfolio_history 快照
+      try {
+        // 重新获取最新 portfolio 信息
+        const [portfolioRows2] = await this.db.execute('SELECT * FROM portfolios WHERE user_id = ?', [userId]);
+        const portfolio2 = portfolioRows2[0];
+        // 计算未实现收益
+        const [positions2] = await this.db.execute('SELECT * FROM positions WHERE portfolio_id = ?', [portfolio2.id]);
+        let unrealizedGain = 0;
+        if (Array.isArray(positions2) && positions2.length > 0) {
+          unrealizedGain = positions2.reduce((sum, p) => sum + (Number(p.unrealized_gain) || 0), 0);
+        }
+        const unrealizedGainFormatted = Number.isFinite(unrealizedGain) ? Number(unrealizedGain).toFixed(2) : '0.00';
+        const dateStr = simulationDate;
+        await this.db.execute(
+          `INSERT INTO portfolio_history (portfolio_id, date, total_value, cash_balance, unrealized_gain)
+           VALUES (?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE total_value = VALUES(total_value), cash_balance = VALUES(cash_balance), unrealized_gain = VALUES(unrealized_gain)`,
+          [portfolio2.id, dateStr, portfolio2.total_value, portfolio2.cash_balance, unrealizedGainFormatted]
+        );
+      } catch (error) {
+        console.error('Error writing portfolio_history after buy:', error);
+      }
+
       return {
         success: true,
         data: {
@@ -293,6 +316,29 @@ class TradingService {
       } catch (error) {
         console.error('Error updating portfolio total value:', error);
         // 不抛出错误，因为交易已经成功提交
+      }
+
+      // 8. 写入 portfolio_history 快照
+      try {
+        // 重新获取最新 portfolio 信息
+        const [portfolioRows2] = await this.db.execute('SELECT * FROM portfolios WHERE user_id = ?', [userId]);
+        const portfolio2 = portfolioRows2[0];
+        // 计算未实现收益
+        const [positions2] = await this.db.execute('SELECT * FROM positions WHERE portfolio_id = ?', [portfolio2.id]);
+        let unrealizedGain = 0;
+        if (Array.isArray(positions2) && positions2.length > 0) {
+          unrealizedGain = positions2.reduce((sum, p) => sum + (Number(p.unrealized_gain) || 0), 0);
+        }
+        const unrealizedGainFormatted = Number.isFinite(unrealizedGain) ? Number(unrealizedGain).toFixed(2) : '0.00';
+        const dateStr = simulationDate;
+        await this.db.execute(
+          `INSERT INTO portfolio_history (portfolio_id, date, total_value, cash_balance, unrealized_gain)
+           VALUES (?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE total_value = VALUES(total_value), cash_balance = VALUES(cash_balance), unrealized_gain = VALUES(unrealized_gain)`,
+          [portfolio2.id, dateStr, portfolio2.total_value, portfolio2.cash_balance, unrealizedGainFormatted]
+        );
+      } catch (error) {
+        console.error('Error writing portfolio_history after sell:', error);
       }
 
       return {

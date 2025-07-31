@@ -54,7 +54,10 @@ exports.getPortfolioAnalytics = async (req, res) => {
       });
     }
     // 支持自定义时间区间分析
-    const { startDate, endDate, symbol } = req.query;
+    // 兼容 GET (req.query) 和 POST (req.body) 请求
+    let startDate = req.query.startDate || req.body?.startDate;
+    let endDate = req.query.endDate || req.body?.endDate;
+    let symbol = req.query.symbol || req.body?.symbol;
     // 总资产：positions表所有持仓市值之和
     const totalValueResult = await db.execute(`SELECT SUM(shares * avg_cost) AS totalValue FROM positions WHERE portfolio_id IN (${portfolioIds.join(',')})`);
     // 总收益：portfolios表的total_return之和
@@ -70,21 +73,30 @@ exports.getPortfolioAnalytics = async (req, res) => {
       percent: totalAssets ? ((Number(r.value) || 0) / totalAssets * 100).toFixed(2) : 0
     }));
 
-    // 表现最好/最差
-    const topPerformersResult = [...assetRows]
-      .sort((a, b) => Number(b.value) - Number(a.value))
-      .slice(0, 3)
-      .map(r => ({ symbol: r.symbol, change: Number(r.value) || 0 }));
-
-    const worstPerformersResult = [...assetRows]
-      .sort((a, b) => Number(a.value) - Number(b.value))
-      .slice(0, 3)
-      .map(r => ({ symbol: r.symbol, change: Number(r.value) || 0 }));
+    // 表现最好/最差：按涨跌幅（当前价与成本价的百分比变化）排序
+    // 需要从 positions 表获取 symbol、avg_cost、current_price
+    const positionRows = await db.execute(`SELECT symbol, avg_cost, current_price FROM positions WHERE portfolio_id IN (${portfolioIds.join(',')})`);
+    const perfArr = positionRows.map(p => {
+      const avgCost = Number(p.avg_cost) || 0;
+      const currentPrice = Number(p.current_price) || 0;
+      const percentChange = avgCost > 0 ? ((currentPrice - avgCost) / avgCost * 100).toFixed(2) : 0;
+      return {
+        symbol: p.symbol,
+        change: Number(percentChange)
+      };
+    });
+    const topPerformersResult = [...perfArr]
+      .sort((a, b) => b.change - a.change)
+      .slice(0, 3);
+    const worstPerformersResult = [...perfArr]
+      .sort((a, b) => a.change - b.change)
+      .slice(0, 3);
     // 每日资产变化：portfolio_history表，支持区间
     let dailySql = `SELECT date, total_value FROM portfolio_history WHERE portfolio_id IN (${portfolioIds.join(',')})`;
     let dailyParams = [];
-    if (startDate && endDate) {
-      dailySql += ' AND date BETWEEN ? AND ?';
+    // 确保 startDate 和 endDate 是字符串且有效
+    if (startDate && endDate && typeof startDate === 'string' && typeof endDate === 'string') {
+      dailySql += ' AND date >= ? AND date <= ?';
       dailyParams.push(startDate, endDate);
     }
     dailySql += ' ORDER BY date';
