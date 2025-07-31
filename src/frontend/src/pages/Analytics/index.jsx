@@ -536,7 +536,7 @@ const Analytics = () => {
                   <path d="M19 13H16V3H19V13ZM13 8H10V3H13V8ZM7 19H4V3H7V19Z" fill="currentColor"/>
                 </svg>
               </span>
-              Top Losers
+              Top Loosers
             </h3>
             <ul style={{ 
               padding: 0, 
