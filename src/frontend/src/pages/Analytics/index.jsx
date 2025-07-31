@@ -13,7 +13,7 @@ const ChartErrorBoundary = ({ children }) => {
   try {
     return children;
   } catch (error) {
-    return <div style={{ color: 'red', textAlign: 'center', margin: '24px 0' }}>图表加载失败，请刷新页面重试</div>;
+    return <div style={{ color: 'red', textAlign: 'center', margin: '24px 0' }}>Chart failed to load, please refresh the page</div>;
   }
 };
 
@@ -40,7 +40,7 @@ const Analytics = () => {
     setLoading(true);
     authApi.getCurrentUser()
       .then(user => {
-        // 模拟时间始终为当前时间
+        // Always use current date for simulation
         const now = new Date();
         const nowStr = now.toISOString().slice(0, 10);
         setSimulationDate(nowStr);
@@ -61,7 +61,7 @@ const Analytics = () => {
             params.endDate = nowStr;
           }
         }
-        // 传递 startDate 和 endDate 参数
+        // Pass startDate and endDate parameters
         return analyticsApi.getPortfolioAnalytics(selectedRange === 'all' ? {} : { startDate: params.startDate, endDate: params.endDate });
       })
       .then(data => {
@@ -143,7 +143,7 @@ const Analytics = () => {
             fontSize: '1.25rem',
             fontWeight: '600',
             marginBottom: '0.5rem'
-          }}>加载失败</h3>
+          }}>Load Failed</h3>
           <p style={{ 
             color: '#64748b',
             marginBottom: '1.5rem'
@@ -163,7 +163,7 @@ const Analytics = () => {
             onMouseOver={(e) => e.target.background = '#2563eb'}
             onMouseOut={(e) => e.target.background = '#3b82f6'}
           >
-            刷新页面
+            Refresh Page
           </button>
         </div>
       </div>
@@ -204,11 +204,11 @@ const Analytics = () => {
             fontSize: '1.25rem',
             fontWeight: '600',
             marginBottom: '0.5rem'
-          }}>暂无分析数据</h3>
+          }}>No Analytics Data</h3>
           <p style={{ 
             color: '#64748b',
             marginBottom: '1.5rem'
-          }}>请检查登录状态或数据源</p>
+          }}>Please check login status or data source</p>
         </div>
       </div>
     );
