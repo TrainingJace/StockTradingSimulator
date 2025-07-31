@@ -1,5 +1,6 @@
 // 股票服务实现
 const axios = require('axios');
+const { top50Stocks } = require('../database/top_50_us_stocks_mock');
 
 class StockService {
   // 获取某只股票在指定日期的前一交易日收盘价
@@ -424,8 +425,8 @@ class StockService {
   async fetchAndUpdateCompanyOverview(symbol) {
     try {
       console.log(`=== Fetching company overview for ${symbol} from Alpha Vantage ===`);
-
-      const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
+      const apiKey = "demo";
+      // const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
       const url = `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${symbol}&apikey=${apiKey}`;
 
       const response = await axios.get(url);
