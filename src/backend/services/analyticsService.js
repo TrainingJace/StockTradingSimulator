@@ -84,8 +84,10 @@ class AnalyticsService {
       const worstPerformersResult = [...perfArr]
         .sort((a, b) => a.change - b.change)
         .slice(0, 3);
-      // 每日资产变化：portfolio_history表，支持区间
-      let dailySql = `SELECT date, total_value FROM portfolio_history WHERE portfolio_id IN (${portfolioIds.join(',')})`;
+      // 每日资产变化：用 portfolios 表的最新数据去更新 portfolio_history，再从 portfolio_history 表查询每日资产变化
+      // 1. portfolios 表的 total_value/cash_balance 已在每次交易后同步写入 portfolio_history
+      // 2. 查询 portfolio_history 表，支持区间
+      let dailySql = `SELECT date, total_value, cash_balance FROM portfolio_history WHERE portfolio_id IN (${portfolioIds.join(',')})`;
       let dailyParams = [];
       if (startDate && endDate && typeof startDate === 'string' && typeof endDate === 'string') {
         dailySql += ' AND date >= ? AND date <= ?';
